@@ -1,0 +1,1143 @@
+<div id="trading-routine-dashboard">
+  <style>
+    #trading-routine-dashboard {
+      --rt-bg: light-dark(#f3f5f3, #0e1211);
+      --rt-panel: light-dark(#ffffff, #171c1a);
+      --rt-text: light-dark(#17201c, #edf4f0);
+      --rt-muted: light-dark(#67716c, #96a29c);
+      --rt-border: light-dark(#dbe1dd, #303834);
+      --rt-green: light-dark(#196b50, #69d3a8);
+      --rt-green-soft: light-dark(#e4f2ec, #17372b);
+      --rt-spice: light-dark(#a33a18, #ff9b72);
+      --rt-spice-soft: light-dark(#fff0e8, #3a2118);
+      --rt-danger: light-dark(#a32626, #ff8585);
+      --rt-danger-soft: light-dark(#fdeaea, #3b1c1c);
+      --rt-track: light-dark(#dfe5e1, #2a312e);
+      max-width:720px;
+      margin:0 auto;
+      padding:22px;
+      border:1px solid var(--rt-border);
+      border-radius:22px;
+      background:var(--rt-bg);
+      color:var(--rt-text);
+      font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      box-sizing:border-box;
+    }
+    #trading-routine-dashboard * { box-sizing:border-box; }
+    #trading-routine-dashboard [hidden] { display:none !important; }
+    #trading-routine-dashboard button,
+    #trading-routine-dashboard input,
+    #trading-routine-dashboard textarea { font:inherit; }
+    #trading-routine-dashboard .rt-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:18px; }
+    #trading-routine-dashboard h2 { margin:0 0 5px; font-size:22px; line-height:1.25; letter-spacing:-.03em; }
+    #trading-routine-dashboard .rt-sub { margin:0; color:var(--rt-muted); font-size:13px; }
+    #trading-routine-dashboard .rt-head-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+    #trading-routine-dashboard .rt-streak { padding:8px 10px; border-radius:9px; background:var(--rt-spice-soft); color:var(--rt-spice); font-size:12px; font-weight:500; white-space:nowrap; }
+    #trading-routine-dashboard .rt-reset { appearance:none; padding:9px 12px; border:1px solid var(--rt-border); border-radius:10px; background:var(--rt-panel); color:var(--rt-muted); font-size:13px; cursor:pointer; white-space:nowrap; }
+    #trading-routine-dashboard .rt-reset:hover { border-color:var(--rt-muted); color:var(--rt-text); }
+    #trading-routine-dashboard .rt-motivation { margin-bottom:18px; padding:13px 14px; border-left:4px solid var(--rt-spice); border-radius:0 11px 11px 0; background:var(--rt-spice-soft); }
+    #trading-routine-dashboard .rt-motivation-label { display:block; margin-bottom:4px; color:var(--rt-spice); font-size:12px; font-weight:500; }
+    #trading-routine-dashboard .rt-motivation-text { display:block; font-size:14px; line-height:1.5; font-weight:500; word-break:keep-all; }
+    #trading-routine-dashboard .rt-mode { margin-bottom:18px; }
+    #trading-routine-dashboard .rt-mode h3 { margin:0 0 9px; font-size:15px; font-weight:500; }
+    #trading-routine-dashboard .rt-mode-options { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    #trading-routine-dashboard .rt-mode-button { appearance:none; display:grid; gap:3px; padding:11px 7px; border:1px solid var(--rt-border); border-radius:11px; background:var(--rt-panel); color:var(--rt-muted); text-align:center; cursor:pointer; }
+    #trading-routine-dashboard .rt-mode-button strong { color:inherit; font-size:13px; font-weight:500; }
+    #trading-routine-dashboard .rt-mode-button span { font-size:11px; }
+    #trading-routine-dashboard .rt-mode-button.is-active { border-color:var(--rt-green); background:var(--rt-green-soft); color:var(--rt-green); }
+    #trading-routine-dashboard .rt-mode-button:disabled { cursor:default; opacity:.65; }
+    #trading-routine-dashboard .rt-rest { margin-bottom:18px; padding:18px; border:1px solid var(--rt-green); border-radius:14px; background:var(--rt-green-soft); color:var(--rt-green); text-align:center; }
+    #trading-routine-dashboard .rt-rest strong { display:block; margin-bottom:5px; font-size:18px; }
+    #trading-routine-dashboard .rt-rest span { display:block; color:var(--rt-text); font-size:13px; line-height:1.5; }
+    #trading-routine-dashboard .rt-weekend-reward { margin-bottom:18px; padding:16px; border-radius:12px; background:var(--rt-spice-soft); color:var(--rt-spice); text-align:center; }
+    #trading-routine-dashboard .rt-weekend-reward strong { display:block; margin-bottom:5px; font-size:15px; font-weight:500; }
+    #trading-routine-dashboard .rt-weekend-reward span { display:block; color:var(--rt-text); font-size:13px; }
+    #trading-routine-dashboard .rt-issues { margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--rt-border); }
+    #trading-routine-dashboard .rt-section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+    #trading-routine-dashboard .rt-section-head h3 { margin:0; font-size:15px; font-weight:500; }
+    #trading-routine-dashboard .rt-link-action { appearance:none; padding:6px 0; border:0; background:transparent; color:var(--rt-green); font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; }
+    #trading-routine-dashboard .rt-link-action:disabled { color:var(--rt-muted); cursor:default; }
+    #trading-routine-dashboard .rt-tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:11px; }
+    #trading-routine-dashboard .rt-tab { appearance:none; padding:8px 4px; border:1px solid var(--rt-border); border-radius:9px; background:var(--rt-panel); color:var(--rt-muted); font-size:12px; font-weight:500; cursor:pointer; }
+    #trading-routine-dashboard .rt-tab.is-active { border-color:var(--rt-green); background:var(--rt-green); color:light-dark(#fff,#102019); }
+    #trading-routine-dashboard .rt-news-list { display:grid; gap:7px; margin:0; padding-left:21px; }
+    #trading-routine-dashboard .rt-news-list li { padding-left:2px; font-size:13px; line-height:1.5; }
+    #trading-routine-dashboard .rt-news-list li::marker { color:var(--rt-green); font-weight:500; }
+    #trading-routine-dashboard .rt-news-list a { color:var(--rt-text); text-decoration:none; word-break:keep-all; }
+    #trading-routine-dashboard .rt-news-list a:hover { text-decoration:underline; text-underline-offset:3px; }
+    #trading-routine-dashboard .rt-news-date { display:block; margin-top:9px; color:var(--rt-muted); font-size:11px; }
+    #trading-routine-dashboard .rt-preflight { margin-bottom:18px; }
+    #trading-routine-dashboard .rt-preflight h3 { margin:0 0 10px; font-size:15px; font-weight:500; }
+    #trading-routine-dashboard .rt-preflight-grid { display:grid; grid-template-columns:1.35fr .65fr; gap:14px; }
+    #trading-routine-dashboard fieldset { min-width:0; margin:0; padding:0; border:0; }
+    #trading-routine-dashboard legend { margin-bottom:7px; color:var(--rt-muted); font-size:12px; }
+    #trading-routine-dashboard .rt-choice-row { display:flex; gap:6px; flex-wrap:wrap; }
+    #trading-routine-dashboard .rt-choice { appearance:none; padding:8px 9px; border:1px solid var(--rt-border); border-radius:8px; background:var(--rt-panel); color:var(--rt-muted); font-size:12px; cursor:pointer; }
+    #trading-routine-dashboard .rt-choice.is-active { border-color:var(--rt-green); background:var(--rt-green-soft); color:var(--rt-green); font-weight:500; }
+    #trading-routine-dashboard .rt-choice.is-danger { border-color:var(--rt-danger); background:var(--rt-danger-soft); color:var(--rt-danger); }
+    #trading-routine-dashboard .rt-blog-read { display:flex; align-items:center; gap:9px; margin-top:11px; padding:11px; border:1px solid var(--rt-spice); border-radius:9px; background:var(--rt-spice-soft); color:var(--rt-spice); cursor:pointer; }
+    #trading-routine-dashboard .rt-blog-read input { width:18px; height:18px; margin:0; accent-color:var(--rt-green); }
+    #trading-routine-dashboard .rt-blog-read span { font-size:13px; font-weight:500; }
+    #trading-routine-dashboard .rt-mood-action { display:grid; gap:9px; margin-top:11px; padding:11px; border:1px solid var(--rt-border); border-radius:9px; background:var(--rt-panel); }
+    #trading-routine-dashboard .rt-mood-action p { margin:0; color:var(--rt-muted); font-size:12px; line-height:1.45; }
+    #trading-routine-dashboard .rt-reflection-label { display:grid; gap:5px; color:var(--rt-muted); font-size:12px; }
+    #trading-routine-dashboard .rt-reflection-input { width:100%; padding:9px 10px; border:1px solid var(--rt-border); border-radius:8px; background:var(--rt-bg); color:var(--rt-text); font-size:16px; }
+    #trading-routine-dashboard .rt-action-check { display:flex; align-items:center; gap:8px; color:var(--rt-text); font-size:13px; cursor:pointer; }
+    #trading-routine-dashboard .rt-action-check input { width:18px; height:18px; margin:0; accent-color:var(--rt-green); }
+    #trading-routine-dashboard .rt-tired-actions { display:flex; align-items:center; justify-content:space-between; gap:9px; flex-wrap:wrap; }
+    #trading-routine-dashboard .rt-sleep-button { appearance:none; padding:8px 10px; border:1px solid var(--rt-border); border-radius:8px; background:var(--rt-bg); color:var(--rt-muted); font-size:12px; cursor:pointer; }
+    #trading-routine-dashboard .rt-gate { margin:11px 0 0; padding:10px 11px; border-radius:9px; background:var(--rt-panel); color:var(--rt-muted); font-size:12px; line-height:1.45; }
+    #trading-routine-dashboard .rt-gate[data-blocked="true"] { background:var(--rt-danger-soft); color:var(--rt-danger); }
+    #trading-routine-dashboard .rt-progress-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; font-size:13px; }
+    #trading-routine-dashboard .rt-progress-row strong { color:var(--rt-green); font-size:14px; }
+    #trading-routine-dashboard .rt-progress { height:9px; margin-bottom:14px; overflow:hidden; border-radius:99px; background:var(--rt-track); }
+    #trading-routine-dashboard .rt-progress span { display:block; width:0; height:100%; border-radius:inherit; background:var(--rt-green); transition:width .25s ease; }
+    #trading-routine-dashboard .rt-next { display:block; margin-bottom:8px; color:var(--rt-muted); font-size:12px; }
+    #trading-routine-dashboard .rt-trade-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
+    #trading-routine-dashboard .rt-trade-head h3 { margin:0; font-size:16px; font-weight:500; }
+    #trading-routine-dashboard .rt-trade-count { color:var(--rt-green); font-size:14px; font-weight:500; white-space:nowrap; }
+    #trading-routine-dashboard .rt-trade-section-label { display:block; margin-bottom:8px; color:var(--rt-spice); font-size:12px; font-weight:500; }
+    #trading-routine-dashboard .rt-trade-stage .rt-item { min-height:94px; cursor:default; }
+    #trading-routine-dashboard .rt-trade-stage .rt-item:active { transform:none; }
+    #trading-routine-dashboard .rt-trade-stage .rt-box { display:none; }
+    #trading-routine-dashboard .rt-note-panel { display:grid; gap:6px; margin-top:11px; }
+    #trading-routine-dashboard .rt-note-label { color:var(--rt-muted); font-size:12px; }
+    #trading-routine-dashboard .rt-note-input { width:100%; min-height:78px; resize:vertical; padding:10px; border:1px solid var(--rt-border); border-radius:9px; background:var(--rt-panel); color:var(--rt-text); font-size:16px; line-height:1.45; }
+    #trading-routine-dashboard .rt-note-help { color:var(--rt-muted); font-size:11px; }
+    #trading-routine-dashboard .rt-note-error { color:var(--rt-danger); font-size:12px; }
+    #trading-routine-dashboard .rt-trade-choices { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:11px; }
+    #trading-routine-dashboard .rt-trade-back { appearance:none; grid-column:1 / -1; min-height:42px; border:1px solid var(--rt-border); border-radius:10px; background:var(--rt-panel); color:var(--rt-muted); cursor:pointer; }
+    #trading-routine-dashboard .rt-trade-back:disabled { cursor:not-allowed; opacity:.45; }
+    #trading-routine-dashboard .rt-answer { appearance:none; min-height:46px; border:1px solid var(--rt-border); border-radius:11px; background:var(--rt-panel); color:var(--rt-text); font-weight:500; cursor:pointer; }
+    #trading-routine-dashboard .rt-answer[data-answer="yes"] { border-color:var(--rt-green); color:var(--rt-green); }
+    #trading-routine-dashboard .rt-answer[data-answer="no"] { border-color:var(--rt-danger); color:var(--rt-danger); }
+    #trading-routine-dashboard .rt-answer[data-answer="yes"].is-active { background:var(--rt-green-soft); }
+    #trading-routine-dashboard .rt-answer[data-answer="no"].is-active { background:var(--rt-danger-soft); }
+    #trading-routine-dashboard .rt-answer:disabled { cursor:not-allowed; opacity:.55; }
+    #trading-routine-dashboard .rt-trade-summary { margin-bottom:18px; padding:15px; border:1px solid var(--rt-border); border-radius:14px; background:var(--rt-panel); }
+    #trading-routine-dashboard .rt-summary-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:7px; }
+    #trading-routine-dashboard .rt-summary-head h3 { margin:0; font-size:16px; font-weight:500; }
+    #trading-routine-dashboard .rt-summary-score { color:var(--rt-green); font-size:14px; font-weight:500; white-space:nowrap; }
+    #trading-routine-dashboard .rt-summary-score[data-pass="false"] { color:var(--rt-danger); }
+    #trading-routine-dashboard .rt-summary-verdict { margin:0 0 11px; color:var(--rt-muted); font-size:12px; line-height:1.45; }
+    #trading-routine-dashboard .rt-summary-verdict[data-pass="false"] { color:var(--rt-danger); }
+    #trading-routine-dashboard .rt-summary-label { display:grid; gap:6px; color:var(--rt-muted); font-size:12px; }
+    #trading-routine-dashboard .rt-summary-text { width:100%; min-height:132px; resize:vertical; padding:10px; border:1px solid var(--rt-border); border-radius:9px; background:var(--rt-bg); color:var(--rt-text); font-size:16px; line-height:1.45; }
+    #trading-routine-dashboard .rt-summary-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    #trading-routine-dashboard .rt-summary-action { appearance:none; padding:9px 11px; border:1px solid var(--rt-border); border-radius:9px; background:var(--rt-bg); color:var(--rt-muted); font-size:12px; cursor:pointer; }
+    #trading-routine-dashboard .rt-copy-summary { border-color:var(--rt-green); color:var(--rt-green); }
+    #trading-routine-dashboard .rt-list { display:grid; gap:10px; }
+    #trading-routine-dashboard .rt-item { display:flex; align-items:flex-start; gap:13px; padding:14px; border:1px solid var(--rt-border); border-radius:14px; background:var(--rt-panel); cursor:pointer; transition:border-color .18s,background .18s,transform .1s; }
+    #trading-routine-dashboard .rt-item:hover { border-color:var(--rt-green); }
+    #trading-routine-dashboard .rt-item:active { transform:scale(.995); }
+    #trading-routine-dashboard .rt-item[data-disabled="true"] { cursor:not-allowed; opacity:.65; }
+    #trading-routine-dashboard .rt-item input { position:absolute; opacity:0; pointer-events:none; }
+    #trading-routine-dashboard .rt-box { flex:0 0 23px; display:grid; place-items:center; width:23px; height:23px; margin-top:1px; border:2px solid var(--rt-border); border-radius:7px; color:transparent; font-size:15px; font-weight:500; }
+    #trading-routine-dashboard .rt-copy { min-width:0; }
+    #trading-routine-dashboard .rt-title { display:block; font-size:15px; line-height:1.35; font-weight:500; }
+    #trading-routine-dashboard .rt-detail { display:block; margin-top:4px; color:var(--rt-muted); font-size:12px; line-height:1.45; }
+    #trading-routine-dashboard .rt-warmup-guide { margin:0 0 11px; padding:13px 14px; border-left:3px solid var(--rt-spice); border-radius:0 10px 10px 0; background:var(--rt-panel); }
+    #trading-routine-dashboard .rt-warmup-guide strong { display:block; margin-bottom:5px; font-size:14px; font-weight:500; }
+    #trading-routine-dashboard .rt-warmup-guide span { display:block; color:var(--rt-muted); font-size:12px; line-height:1.55; }
+    #trading-routine-dashboard .rt-warmup-points { display:grid; gap:7px; margin-top:8px; color:var(--rt-muted); font-size:12px; line-height:1.5; }
+    #trading-routine-dashboard .rt-warmup-points > span { position:relative; padding-left:14px; }
+    #trading-routine-dashboard .rt-warmup-points > span::before { position:absolute; left:0; color:var(--rt-green); content:'•'; }
+    #trading-routine-dashboard .rt-item:has(input:checked) { border-color:var(--rt-green); background:var(--rt-green-soft); }
+    #trading-routine-dashboard .rt-item input:checked + .rt-box { border-color:var(--rt-green); background:var(--rt-green); color:light-dark(#fff,#102019); }
+    #trading-routine-dashboard .rt-item:has(input:focus-visible) { outline:3px solid color-mix(in srgb,var(--rt-green) 32%,transparent); outline-offset:2px; }
+    #trading-routine-dashboard .rt-score-panel { padding:13px; border:1px dashed var(--rt-border); border-radius:12px; background:var(--rt-panel); }
+    #trading-routine-dashboard .rt-score-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+    #trading-routine-dashboard .rt-score-head strong { font-size:13px; font-weight:500; }
+    #trading-routine-dashboard .rt-score-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:7px; }
+    #trading-routine-dashboard .rt-score-grid label { display:grid; gap:4px; color:var(--rt-muted); font-size:11px; }
+    #trading-routine-dashboard .rt-score-input { width:100%; padding:8px 6px; border:1px solid var(--rt-border); border-radius:8px; background:var(--rt-bg); color:var(--rt-text); font-size:14px; text-align:center; }
+    #trading-routine-dashboard .rt-score-status { display:block; margin-top:9px; color:var(--rt-danger); font-size:12px; }
+    #trading-routine-dashboard .rt-score-status[data-pass="true"] { color:var(--rt-green); }
+    #trading-routine-dashboard .rt-done { margin-top:16px; padding:16px; border-radius:12px; background:var(--rt-green-soft); color:var(--rt-green); text-align:center; }
+    #trading-routine-dashboard .rt-praise { display:block; margin-bottom:6px; font-size:15px; line-height:1.45; font-weight:500; }
+    @media (max-width:620px) {
+      #trading-routine-dashboard .rt-preflight-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:520px) {
+      #trading-routine-dashboard { padding:16px; border-radius:16px; }
+      #trading-routine-dashboard .rt-head-actions { display:grid; justify-items:end; }
+      #trading-routine-dashboard h2 { font-size:19px; }
+      #trading-routine-dashboard .rt-item { padding:13px 12px; }
+      #trading-routine-dashboard .rt-tabs button { padding:8px 2px; }
+      #trading-routine-dashboard .rt-score-grid { grid-template-columns:1fr; }
+    }
+  </style>
+
+  <div class="rt-head">
+    <div>
+      <h2>하루 트레이딩 루틴</h2>
+      <p class="rt-sub">매일 오전 8시 초기화 · 토요일 휴식 · 일요일 18:00 재개</p>
+    </div>
+    <div class="rt-head-actions">
+      <span class="rt-streak">🔥 0일 연속</span>
+      <button class="rt-reset" type="button">오늘 전체 초기화</button>
+    </div>
+  </div>
+
+  <div class="rt-motivation" aria-live="polite">
+    <span class="rt-motivation-label">🔥 오늘의 매운 한마디</span>
+    <strong class="rt-motivation-text"></strong>
+  </div>
+
+  <section class="rt-mode" aria-labelledby="rt-mode-title">
+    <h3 id="rt-mode-title">오늘 루틴 선택</h3>
+    <div class="rt-mode-options" role="group" aria-label="오늘 루틴">
+      <button class="rt-mode-button" type="button" data-mode="simple" aria-pressed="false"><strong>바쁜날</strong><span>워밍업 3개 대분류</span></button>
+      <button class="rt-mode-button is-active" type="button" data-mode="full" aria-pressed="true"><strong>일반 루틴</strong><span>40문항 + 워밍업</span></button>
+      <button class="rt-mode-button" type="button" data-mode="rest" aria-pressed="false"><strong>쉬는 날</strong><span>충전하기</span></button>
+    </div>
+  </section>
+
+  <div class="rt-rest" aria-live="polite" hidden>
+    <strong class="rt-rest-title">현재는 휴식 시간</strong>
+    <span class="rt-rest-text">토요일은 쉬고, 일요일 오후 6시부터 체크리스트를 시작합니다.</span>
+  </div>
+
+  <div class="rt-weekend-reward" aria-live="polite" hidden>
+    <strong>🎁 5일 연속 달성</strong>
+    <span>주말 보상 · 맛있는 음식 배달 쿠폰</span>
+  </div>
+
+  <section class="rt-issues" aria-labelledby="rt-issues-title">
+    <div class="rt-section-head">
+      <h3 id="rt-issues-title">전날 핵심 이슈 · 영역별 3</h3>
+      <button class="rt-link-action rt-refresh" type="button">전날 뉴스 다시 받기</button>
+    </div>
+    <div class="rt-tabs" role="tablist" aria-label="핵심 이슈 영역">
+      <button class="rt-tab is-active" id="rt-tab-world" type="button" role="tab" aria-selected="true" aria-controls="rt-panel-world">전 세계</button>
+      <button class="rt-tab" id="rt-tab-us" type="button" role="tab" aria-selected="false" aria-controls="rt-panel-us">미국</button>
+      <button class="rt-tab" id="rt-tab-korea" type="button" role="tab" aria-selected="false" aria-controls="rt-panel-korea">한국</button>
+      <button class="rt-tab" id="rt-tab-crypto" type="button" role="tab" aria-selected="false" aria-controls="rt-panel-crypto">코인</button>
+    </div>
+    <div class="rt-news-panel" id="rt-panel-world" role="tabpanel" aria-labelledby="rt-tab-world">
+      <ol class="rt-news-list">
+        <li><a href="https://apnews.com/article/britain-inflation-interest-rates-energy-f390b0105bf3cb9b35f6a42761e96233" target="_blank" rel="noopener noreferrer">영국 9월 소비자물가는 연 3.5%로 약 1년 만의 최고치를 기록해 11월 영란은행 금리 인상 기대를 강화.</a></li>
+        <li><a href="https://apnews.com/article/japan-trade-oil-imports-exports-war-c2265fa62a4511229dd83693d94d32e2" target="_blank" rel="noopener noreferrer">중동 전쟁발 원유 수입비 급등으로 일본의 회계연도 상반기 무역적자가 2조8,100억엔으로 확대.</a></li>
+        <li><a href="https://www.axios.com/2026/10/21/oil-prices-inflation-central-banking" target="_blank" rel="noopener noreferrer">2027년 1월물 유가는 9월 초보다 17% 오른 배럴당 97달러 이상으로 전쟁 이후 최고치를 기록해 장기 인플레이션 우려를 자극.</a></li>
+      </ol>
+    </div>
+    <div class="rt-news-panel" id="rt-panel-us" role="tabpanel" aria-labelledby="rt-tab-us" hidden>
+      <ol class="rt-news-list">
+        <li><a href="https://apnews.com/article/wall-street-stocks-dow-nasdaq-3ec2d8c93a390023ef8104973dea275f" target="_blank" rel="noopener noreferrer">스페이스X 등 강한 실적에 S&amp;P 500은 0.6%, 다우는 0.7%, 나스닥은 1.1% 상승 마감.</a></li>
+        <li><a href="https://www.homes.com/news/mortgage-applications-fall-5-3-in-seventh-straight-weekly-slide/1996011422/" target="_blank" rel="noopener noreferrer">미국 모기지 신청은 주간 5.3% 감소해 7주 연속 하락했고 주택구입 신청은 7% 줄어 고금리 부담을 재확인.</a></li>
+        <li><a href="https://apnews.com/article/tesla-quarterly-earning-musk-spacex-merger-cfe0453f6bf0d08d22150022128492fa" target="_blank" rel="noopener noreferrer">테슬라 3분기 순이익은 전년 대비 44% 감소한 7억8,700만달러, 매출은 280억달러로 사실상 정체돼 시간외 2% 하락.</a></li>
+      </ol>
+    </div>
+    <div class="rt-news-panel" id="rt-panel-korea" role="tabpanel" aria-labelledby="rt-tab-korea" hidden>
+      <ol class="rt-news-list">
+        <li><a href="https://en.yna.co.kr/view/AEN20261021009200320" target="_blank" rel="noopener noreferrer">코스피는 기술주 반등 속 182.92포인트(3.29%) 오른 5,735.66으로 마감.</a></li>
+        <li><a href="https://en.yna.co.kr/view/AEN20261021002000320" target="_blank" rel="noopener noreferrer">10월 1~20일 한국 수출은 616억달러로 전년 대비 두 배 이상 늘었고 무역수지는 145억달러 흑자.</a></li>
+        <li><a href="https://en.yna.co.kr/view/AEN20261020008100320?section=economy-finance/economy" target="_blank" rel="noopener noreferrer">9월 생산자물가는 전월 대비 0.2%, 전년 대비 7.7% 올라 향후 소비자물가 압력을 유지.</a></li>
+      </ol>
+    </div>
+    <div class="rt-news-panel" id="rt-panel-crypto" role="tabpanel" aria-labelledby="rt-tab-crypto" hidden>
+      <ol class="rt-news-list">
+        <li><a href="https://www.theblock.co/news/markets/2026-10-21-bitcoin-volatility-nears-2026-lows-as-traders-brace-for-fed-decision-and-us-midterms-421524" target="_blank" rel="noopener noreferrer">비트코인 28일 실현변동성은 1.2%로 2026년 최저권에 근접해 연준 결정과 미국 중간선거 전 변동성 확대 가능성이 부각.</a></li>
+        <li><a href="https://www.coindesk.com/tech/2026/10/21/solana-s-alpenglow-its-biggest-network-overhaul-since-2020-goes-live-wednesday" target="_blank" rel="noopener noreferrer">솔라나의 알펜글로우 업그레이드가 가동돼 거래 최종성을 약 6초에서 목표치 150밀리초로 단축.</a></li>
+        <li><a href="https://www.theblock.co/news/markets/2026-10-21-grayscale-expands-in-kind-subscriptions-10-crypto-etfs-421559" target="_blank" rel="noopener noreferrer">그레이스케일은 비트코인·이더리움·솔라나·XRP 등 10개 상품에 토큰을 현물로 납입해 지분을 받는 기능을 확대.</a></li>
+      </ol>
+    </div>
+    <small class="rt-news-date">2026.10.21 뉴스 · 2026.10.22 08:00 KST 반영 · 문장을 누르면 출처 확인</small>
+  </section>
+
+  <section class="rt-active">
+    <section class="rt-preflight" aria-labelledby="rt-preflight-title">
+      <h3 id="rt-preflight-title">진입 전 3초 점검</h3>
+      <div class="rt-preflight-grid">
+        <fieldset>
+          <legend>현재 상태</legend>
+          <div class="rt-choice-row">
+            <button class="rt-choice rt-mood" type="button" data-mood="calm" aria-pressed="false">침착</button>
+            <button class="rt-choice rt-mood" type="button" data-mood="rush" aria-pressed="false">조급</button>
+            <button class="rt-choice rt-mood" type="button" data-mood="angry" aria-pressed="false">화남</button>
+            <button class="rt-choice rt-mood" type="button" data-mood="tired" aria-pressed="false">피곤</button>
+            <button class="rt-choice rt-mood" type="button" data-mood="revenge" aria-pressed="false">복구 욕구</button>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>연속 손실</legend>
+          <div class="rt-choice-row">
+            <button class="rt-choice rt-loss" type="button" data-loss="0" aria-pressed="true">0회</button>
+            <button class="rt-choice rt-loss" type="button" data-loss="1" aria-pressed="false">1회</button>
+            <button class="rt-choice rt-loss" type="button" data-loss="2" aria-pressed="false">2회+</button>
+          </div>
+        </fieldset>
+      </div>
+      <label class="rt-blog-read" hidden>
+        <input class="rt-blog-check" type="checkbox">
+        <span>블로그 루틴 전부 정독 완료</span>
+      </label>
+      <div class="rt-mood-action rt-revenge-review" hidden>
+        <label class="rt-reflection-label">왜 지금 복구가 필요한지 한 줄로 적기
+          <input class="rt-reflection-input" type="text" maxlength="120" placeholder="감정이 아닌 이유를 최소 5자로 적기">
+        </label>
+        <label class="rt-action-check">
+          <input class="rt-revenge-scenario" type="checkbox">
+          <span>진입 시나리오 재검토 완료</span>
+        </label>
+      </div>
+      <div class="rt-mood-action rt-tired-review" hidden>
+        <p>가짜 피곤일 수 있습니다. 먼저 잠을 깨보고, 집중이 안 될 만큼 피곤하면 자세요.</p>
+        <div class="rt-tired-actions">
+          <label class="rt-action-check">
+            <input class="rt-wake-check" type="checkbox">
+            <span>잠 깨기 완료</span>
+          </label>
+          <button class="rt-sleep-button" type="button">너무 피곤함 · 쉬는 날</button>
+        </div>
+      </div>
+      <p class="rt-gate" data-blocked="true" aria-live="polite">현재 상태를 먼저 선택하세요.</p>
+    </section>
+
+    <section class="rt-trade-summary" aria-labelledby="rt-summary-title" hidden>
+      <div class="rt-summary-head">
+        <h3 id="rt-summary-title">매매 체크 결과</h3>
+        <strong class="rt-summary-score" data-pass="false">0 / 40 · 0%</strong>
+      </div>
+      <p class="rt-summary-verdict" data-pass="false" role="status"></p>
+      <label class="rt-summary-label">트레이딩뷰 메모용 텍스트
+        <textarea class="rt-summary-text" rows="7" readonly></textarea>
+      </label>
+      <div class="rt-summary-actions">
+        <button class="rt-summary-action rt-summary-back" type="button">← 마지막 문항</button>
+        <button class="rt-summary-action rt-retry-no" type="button">아니요 항목 재점검</button>
+        <button class="rt-summary-action rt-copy-summary" type="button">텍스트 복사</button>
+      </div>
+    </section>
+
+    <section class="rt-warmup-stage">
+    <div class="rt-progress-row">
+      <span class="rt-warmup-step">2단계 · 진입 조건 워밍업</span>
+      <strong class="rt-count">0 / 3 · 0%</strong>
+    </div>
+    <div class="rt-progress rt-warmup-progress" role="progressbar" aria-label="워밍업 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+    <span class="rt-next">지금 할 일 · 1 / 3</span>
+
+    <div class="rt-warmup-guide">
+      <strong>큰 흐름을 머리에 박는 워밍업</strong>
+      <span>파동 카운팅의 마감을 구조와 피보나치 소거로 확인하고, 분석 기준을 최근 파동으로 계속 끌어당깁니다. 주봉부터 1시간봉까지 모든 흐름을 보고 타점은 5분봉까지 내리며, 큰 파동과 작은 파동이 겹치는 위치만 공략합니다.</span>
+    </div>
+
+    <div class="rt-list rt-full-list" data-mode-list="full">
+      <label class="rt-item"><input class="rt-task" type="checkbox" data-id="warmup-structure"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">1. 큰 흐름 · 경로 · 유동성</span><span class="rt-warmup-points"><span>경로체크와 ICT 손익비 기준의 유효 고저점, 내부·외부 유동성을 확인한다.</span><span>스윕이 나오면 가까운 상위 유동성부터 목표로 잡는다.</span><span>확실한 3개의 꼭지점이 없고 하나의 파동처럼 보이면 구조가 드러날 때까지 절대 매매하지 않는다.</span></span></span></label>
+      <label class="rt-item" hidden><input class="rt-task" type="checkbox" data-id="warmup-targets"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">2. 파동 카운팅 · 피보나치 TP</span><span class="rt-warmup-points"><span>HH·HL 또는 LL·LH 구간부터 3개·5개 카운팅으로 피보나치를 적용한다.</span><span>최소 TP는 플랫 A 등장 뒤 플랫 B 0.9, 최대 TP는 임펄스, 후순위 WXY는 X 0.9로 설정한다.</span><span>90%, 38.2~61.8%, 61.8~78.6%의 세 가지 기준으로 TP를 잡는다.</span></span></span></label>
+      <label class="rt-item" hidden><input class="rt-task" type="checkbox" data-id="warmup-system"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">3. 시스템 · 환경 · 최종 진입 허가</span><span class="rt-warmup-points"><span>빅2 없이 매매하지 않는다. 임펄스·조정파의 시간 길이와 Stoch를 확인한다.</span><span>RSI 추세선의 파동 마감, 추세선 이탈 뒤 되돌림과 새 출발, RSI 초기화·다이버전스를 확인한다.</span><span>고배 레버리지와 OI를 확인하고, B·X·2·4·5파는 작은 봉의 빅2로 검증해 1시간 MACD 한 파동만 노린다.</span><span>이 수준의 분석이 불가능한 환경에서는 진입하지 않는다. 집에서 분석했어도 똑같이 진입할 수 있을 때만 체크한다.</span><span>일반 루틴은 메인 시나리오의 GPT 엘리엇파동 구조 점수 75점 이상을 확인한 뒤 최종 체크한다.</span></span></span></label>
+    </div>
+
+    <div class="rt-list rt-simple-list" data-mode-list="simple" hidden>
+      <label class="rt-item"><input class="rt-task" type="checkbox" data-id="busy-structure"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">1. 큰 흐름 · 경로 · 유동성</span><span class="rt-warmup-points"><span>경로체크와 ICT 손익비 기준의 유효 고저점, 내부·외부 유동성을 확인한다.</span><span>스윕이 나오면 가까운 상위 유동성부터 목표로 잡는다.</span><span>확실한 3개의 꼭지점이 없고 하나의 파동처럼 보이면 구조가 드러날 때까지 절대 매매하지 않는다.</span></span></span></label>
+      <label class="rt-item" hidden><input class="rt-task" type="checkbox" data-id="busy-targets"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">2. 파동 카운팅 · 피보나치 TP</span><span class="rt-warmup-points"><span>HH·HL 또는 LL·LH 구간부터 3개·5개 카운팅으로 피보나치를 적용한다.</span><span>최소 TP는 플랫 A 등장 뒤 플랫 B 0.9, 최대 TP는 임펄스, 후순위 WXY는 X 0.9로 설정한다.</span><span>90%, 38.2~61.8%, 61.8~78.6%의 세 가지 기준으로 TP를 잡는다.</span></span></span></label>
+      <label class="rt-item" hidden><input class="rt-task" type="checkbox" data-id="busy-system"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">3. 시스템 · 환경 · 최종 진입 허가</span><span class="rt-warmup-points"><span>빅2 없이 매매하지 않는다. 임펄스·조정파의 시간 길이와 Stoch를 확인한다.</span><span>RSI 추세선의 파동 마감, 추세선 이탈 뒤 되돌림과 새 출발, RSI 초기화·다이버전스를 확인한다.</span><span>고배 레버리지와 OI를 확인하고, B·X·2·4·5파는 작은 봉의 빅2로 검증해 1시간 MACD 한 파동만 노린다.</span><span>이 수준의 분석이 불가능한 환경에서는 진입하지 않는다. 집에서 분석했어도 똑같이 진입할 수 있을 때만 체크한다.</span></span></span></label>
+    </div>
+
+      <div class="rt-score-panel" hidden>
+        <div class="rt-score-head">
+        <strong>메인 시나리오 · 엘파 구조 점수</strong>
+        <button class="rt-link-action rt-gpt-review" type="button">GPT 검토 요청</button>
+      </div>
+      <div class="rt-score-grid">
+        <label>메인 시나리오 점수<input class="rt-score-input" type="number" min="0" max="100" inputmode="numeric" data-score="main" placeholder="0"></label>
+      </div>
+      <span class="rt-score-status" data-pass="false" aria-live="polite">예측 적중이 아니라 엘리엇파동 규칙상 유효성·완성도를 평가하며, 75점 이상이면 통과합니다.</span>
+    </div>
+    </section>
+
+    <section class="rt-trade-stage" aria-labelledby="rt-trade-title" hidden>
+      <div class="rt-trade-head">
+        <h3 id="rt-trade-title">1단계 · 매매 체크리스트</h3>
+        <strong class="rt-trade-count">0 / 40 · 0%</strong>
+      </div>
+      <div class="rt-progress rt-trade-progress" role="progressbar" aria-label="매매 체크리스트 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+      <span class="rt-trade-section-label">① 시장 위치 · 경로</span>
+      <span class="rt-next rt-trade-next">매매 점검 · 1 / 40</span>
+
+      <div class="rt-list rt-trade-list">
+        <label class="rt-item rt-trade-item" data-section="market"><input class="rt-trade-task" type="checkbox" data-id="trade-01"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">1. 주말 여부</span><span class="rt-detail">현재가 주말인지 확인했고, 주말이라면 유동성·변동성 저하를 반영해 1H RSI 추세선 돌파에 대한 기대치를 낮췄는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-02"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">2. 파동 소거</span><span class="rt-detail">임펄스, 플랫, 지그 → WXY → 다이아고날까지 모두 소거되었나?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" data-note-label="상위 TF 관계" data-note-placeholder="Daily·Weekly와 4H 시나리오의 관계를 한 문장으로 적기" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-03"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">3. 상위 TF 정합성</span><span class="rt-detail">4H 시나리오가 Daily/Weekly의 주요 파동 방향·위치와 어떤 관계인지 설명 가능한가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" data-note-label="4H 파동 위치 · 피봇" data-note-placeholder="현재 파동 위치와 피봇이 겹친다고 판단한 이유를 한 문장으로 적기" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-04"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">4. 4H 위치</span><span class="rt-detail">현재 파동이 2·4·B·C·5 중 어디인지 설명 가능한가? 피봇 겹침 자리도 확인했나?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-05"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">5. 경로체크</span><span class="rt-detail">경로체크 후 매매하려는 봉에서 확실한 3개나 5개의 파동이 보이는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-06"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">6. 가격 구조</span><span class="rt-detail">오더플로우를 확인했고, 롱이면 HL·숏이면 LH가 만들어졌는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" data-note-label="메인 · 서브 시나리오" data-note-placeholder="메인과 서브 시나리오가 어떻게 갈리는지 한 문장으로 적기" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-07"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">7. 시나리오</span><span class="rt-detail">메인/서브 경우의 수를 2개 정도로 압축했는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" data-note-label="서브 시나리오 전환 증거" data-note-placeholder="어떤 증거가 나오면 메인을 버리고 서브로 전환할지 한 문장으로 적기" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-08"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">8. 반대 시나리오 증거</span><span class="rt-detail">메인이 아니라 서브 시나리오가 맞다고 판단하게 만들 증거가 무엇인지 말할 수 있는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-09"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">9. Degree</span><span class="rt-detail">지금 먹으려는 목표가 현재 파동 degree와 맞는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-10"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">10. 유동성 목표</span><span class="rt-detail">가격이 먹으러 갈 가능성이 있는 가까운 풀과 먼 풀의 주요 LRL/HRL이 어디인지 명확한가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-11"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">11. ZONE</span><span class="rt-detail">현재 경로상 사용되지 않은 ZONE과 이미 사용된 ZONE을 구분했는가? (매물대 체크용)</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="market" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-12"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">12. FVG / VOID</span><span class="rt-detail">현재 파동에서 지지가 나오거나 먹어줄 FVG·Liquidity Void를 확인했는가?</span></span></label>
+
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-13"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">13. 피보나치</span><span class="rt-detail">주요 피보나치를 2개 겹침으로 확인되는 자리가 맞는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-14"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">14. 시간</span><span class="rt-detail">1대1 이상의 시간을 충족했는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-15"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">15. RSI 추세선</span><span class="rt-detail">기존 파동을 유지하던 RSI 추세선이 깨졌는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-16"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">16. 가격 0–2 · RSI 0–2 추세선</span><span class="rt-detail">두 추세선이 유지되고 있는가? 깨졌다면 2파가 아직 안 끝났거나 카운팅이 틀렸으니 다시 카운팅한다. 깨졌다면 아니요, 유지라면 예.</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-17"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">17. Hidden Divergence</span><span class="rt-detail">2·4파에서 가격 HL + RSI LL 또는 가격 LH + RSI HH가 있는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-18"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">18. MACD 3파 · C파</span><span class="rt-detail">현재 3파·C파 후보에서 MACD momentum peak가 명확하게 나타났는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-19"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">19. MACD 4파</span><span class="rt-detail">4파에서 Histogram이 줄고 MACD/Signal이 충분히 감속했는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-20"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">20. MACD 제로선</span><span class="rt-detail">MACD가 제로선 근처까지 눌리거나 되돌아왔는가? 제로선 복귀는 중요한 힌트 또는 빅2인가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-21"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">21. 빅2</span><span class="rt-detail">MACD뿐 아니라 Signal까지 방향 전환하며 감속이 지속되고 있는가? RSI 추세선도 작도했는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-22"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">22. 5파 Divergence</span><span class="rt-detail">5파 후보에서 가격은 HH/LL인데 RSI는 LH/HL인가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-23"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">23. MACD Divergence</span><span class="rt-detail">같은 5파에서 MACD도 3파 momentum peak를 넘지 못했는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-24"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">24. 이중 Divergence</span><span class="rt-detail">RSI + MACD divergence가 동시에 발생했는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-25"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">25. Stoch RSI</span><span class="rt-detail">2·4파에서 단기 momentum이 충분히 reset됐는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-26"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">26. Stoch RSI 여유</span><span class="rt-detail">현재 스토 여유가 1시간에 없다면 4시간이라도 있고 셋업이 되었는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="momentum" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-27"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">27. 200MA</span><span class="rt-detail">3파의 MA 이격이 4파의 시간 조정으로 충분히 축소됐는가?</span></span></label>
+
+        <label class="rt-item rt-trade-item" data-section="derivatives" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-28"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">28. OI</span><span class="rt-detail">다이아가 뜨는 위치가 파동 마감 위치와 일치하는가? 혹은 반익해야 할 정도의 선물 흐름인가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="derivatives" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-29"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">29. 고배 레버리지</span><span class="rt-detail">1H·4H·일봉·주봉에서 고배 레버리지 변동성이 곧 커질 수 있는 환경인가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="derivatives" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-30"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">30. CVD</span><span class="rt-detail">CVD 다이버전스가 확인되는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="derivatives" data-note-label="포지션 쏠림" data-note-placeholder="롱·숏 중 불편해질 방향과 그 이유를 한 문장으로 적기" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-31"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">31. 포지션 쏠림</span><span class="rt-detail">현재 어느 방향의 참여자가 불편해질 수 있는 구조인지 설명 가능한가?</span></span></label>
+
+        <label class="rt-item rt-trade-item" data-section="entry" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-32"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">32. 4H Setup</span><span class="rt-detail">워밍업 3개 대분류를 모두 충족할 수 있는 셋업인가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="entry" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-33"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">33. 1시간이나 4시간 내부파동</span><span class="rt-detail">내부파동이 3개나 5개로 확연히 보이는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="entry" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-34"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">34. 1H Regime</span><span class="rt-detail">1시간에서 RSI 추세선 돌파나 빅2가 등장했는가?</span></span></label>
+
+        <label class="rt-item rt-trade-item" data-section="risk" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-35"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">35. 손익비</span><span class="rt-detail">최소 목표까지 충분한 R:R이 확보되는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="risk" data-note-label="감정이 유도하는 행동" data-note-placeholder="지금 감정이 어떤 행동을 부추기는지 한 문장으로 적기" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-36"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">36. 감정 → 행동</span><span class="rt-detail">지금 느끼는 감정이 나에게 어떤 행동을 시키려는지 한 문장으로 적었는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="risk" data-note-label="객관적 진입 이유" data-note-placeholder="지금 기다리면 사라지는 객관적 근거를 한 문장으로 적기" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-37"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">37. 진입 이유</span><span class="rt-detail">지금 기다리면 사라지는 객관적 진입 근거가 있으며, 단순히 놓칠까 봐 들어가려는 것이 아닌가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="risk" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-38"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">38. 시스템 외 근거</span><span class="rt-detail">체크리스트에 없는 즉흥적인 이유를 진입 근거에 추가하지 않았는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="risk" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-39"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">39. 실행 허가</span><span class="rt-detail">위 분석을 완료하기 전에 포지션을 잡거나 주문창을 먼저 열지 않았는가?</span></span></label>
+        <label class="rt-item rt-trade-item" data-section="risk" hidden><input class="rt-trade-task" type="checkbox" data-id="trade-40"><span class="rt-box">✓</span><span class="rt-copy"><span class="rt-title">40. 최종 판단</span><span class="rt-detail">4H 위치 + 1H 추세선 트리거 + 명확한 무효화가 모두 충족됐는가?</span></span></label>
+      </div>
+      <div class="rt-note-panel" hidden>
+        <label class="rt-note-label" for="rt-trade-note">트뷰 기록 · <span class="rt-note-title"></span></label>
+        <textarea class="rt-note-input" id="rt-trade-note" rows="3" maxlength="500"></textarea>
+        <span class="rt-note-help">판단 근거를 한 문장으로 적으면 최종 복사 텍스트에 자동 포함됩니다.</span>
+        <span class="rt-note-error" role="alert" hidden>판단 근거를 한 문장으로 적은 뒤 예를 선택하세요.</span>
+      </div>
+      <div class="rt-trade-choices" role="group" aria-label="현재 항목 답변">
+        <button class="rt-trade-back" type="button">← 이전 질문</button>
+        <button class="rt-answer" type="button" data-answer="yes">예</button>
+        <button class="rt-answer" type="button" data-answer="no">아니요</button>
+      </div>
+    </section>
+
+    <div class="rt-done" hidden>
+      <strong class="rt-praise"></strong>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      const root = document.getElementById('trading-routine-dashboard');
+      const fullBoxes = [...root.querySelectorAll('.rt-full-list .rt-task')];
+      const simpleBoxes = [...root.querySelectorAll('.rt-simple-list .rt-task')];
+      const allBoxes = [...fullBoxes,...simpleBoxes];
+      const fullItems = fullBoxes.map(box => box.closest('.rt-item'));
+      const simpleItems = simpleBoxes.map(box => box.closest('.rt-item'));
+      const tradeBoxes = [...root.querySelectorAll('.rt-trade-task')];
+      const tradeItems = tradeBoxes.map(box => box.closest('.rt-trade-item'));
+      const modeButtons = [...root.querySelectorAll('.rt-mode-button')];
+      const modeLists = [...root.querySelectorAll('[data-mode-list]')];
+      const scores = [...root.querySelectorAll('.rt-score-input')];
+      const moods = [...root.querySelectorAll('.rt-mood')];
+      const losses = [...root.querySelectorAll('.rt-loss')];
+      const blogReadRow = root.querySelector('.rt-blog-read');
+      const blogCheck = root.querySelector('.rt-blog-check');
+      const revengeReview = root.querySelector('.rt-revenge-review');
+      const revengeReason = root.querySelector('.rt-reflection-input');
+      const revengeScenario = root.querySelector('.rt-revenge-scenario');
+      const tiredReview = root.querySelector('.rt-tired-review');
+      const wakeCheck = root.querySelector('.rt-wake-check');
+      const sleepButton = root.querySelector('.rt-sleep-button');
+      const count = root.querySelector('.rt-count');
+      const warmupStep = root.querySelector('.rt-warmup-step');
+      const progress = root.querySelector('.rt-warmup-progress');
+      const fill = progress.querySelector('span');
+      const next = root.querySelector('.rt-next');
+      const preflight = root.querySelector('.rt-preflight');
+      const warmupStage = root.querySelector('.rt-warmup-stage');
+      const tradeStage = root.querySelector('.rt-trade-stage');
+      const tradeCount = root.querySelector('.rt-trade-count');
+      const tradeProgress = root.querySelector('.rt-trade-progress');
+      const tradeFill = tradeProgress.querySelector('span');
+      const tradeSection = root.querySelector('.rt-trade-section-label');
+      const tradeNext = root.querySelector('.rt-trade-next');
+      const tradeAnswerButtons = [...root.querySelectorAll('.rt-answer')];
+      const tradeBack = root.querySelector('.rt-trade-back');
+      const notePanel = root.querySelector('.rt-note-panel');
+      const noteTitle = root.querySelector('.rt-note-title');
+      const noteInput = root.querySelector('.rt-note-input');
+      const noteError = root.querySelector('.rt-note-error');
+      const tradeSummary = root.querySelector('.rt-trade-summary');
+      const summaryScore = root.querySelector('.rt-summary-score');
+      const summaryVerdict = root.querySelector('.rt-summary-verdict');
+      const summaryText = root.querySelector('.rt-summary-text');
+      const copySummary = root.querySelector('.rt-copy-summary');
+      const retryNo = root.querySelector('.rt-retry-no');
+      const summaryBack = root.querySelector('.rt-summary-back');
+      const done = root.querySelector('.rt-done');
+      const praise = root.querySelector('.rt-praise');
+      const streak = root.querySelector('.rt-streak');
+      const motivation = root.querySelector('.rt-motivation-text');
+      const rest = root.querySelector('.rt-rest');
+      const restTitle = root.querySelector('.rt-rest-title');
+      const restText = root.querySelector('.rt-rest-text');
+      const weekendReward = root.querySelector('.rt-weekend-reward');
+      const active = root.querySelector('.rt-active');
+      const gate = root.querySelector('.rt-gate');
+      const scorePanel = root.querySelector('.rt-score-panel');
+      const scoreStatus = root.querySelector('.rt-score-status');
+      const gptReview = root.querySelector('.rt-gpt-review');
+      const DAY_PREFIX = 'trading-routine-v4:';
+      const META_KEY = 'trading-routine-meta-v4';
+      const FLOW_VERSION = 6;
+      const scoreKey = 'main';
+      const moodNames = { calm:'침착', rush:'조급', angry:'화남', tired:'피곤', revenge:'복구 욕구' };
+      const tradeSectionNames = {
+        market:'① 시장 위치 · 경로',momentum:'② 파동 · Momentum 검증',
+        derivatives:'③ 파생데이터 · 포지션',entry:'④ 4H · 1H 진입 검증',
+        risk:'⑤ 리스크 · 감정 · 최종 판단'
+      };
+      const spicy = [
+        '계획 없는 진입은 분석이 아니라 도박이다.',
+        '손절 한 번 미루는 순간, 시장이 네 계좌를 대신 정리한다.',
+        '확신이 아니라 근거로 눌러라. 감정은 수익을 내지 못한다.',
+        '기다리지 못하면 좋은 자리는 전부 남의 것이 된다.',
+        '복구 매매는 복구가 아니라 계좌 파괴의 예고편이다.',
+        '오늘 규칙을 깨면 내일 계좌가 너를 버린다.',
+        '시장은 네 사정을 모른다. 원칙만 살아남는다.',
+        '포모로 잡은 진입은 대부분 손절로 교육받는다.',
+        '한 방을 노리는 순간, 시장은 네 전부를 노린다.',
+        '분석을 끝내기 전 클릭한 대가는 계좌가 낸다.',
+        '놓친 자리는 손실이 아니다. 쫓아간 자리가 진짜 손실이다.',
+        '차트가 아니라 욕심을 보고 있다면 지금 손을 떼라.',
+        '준비 없는 자신감은 시장에서 가장 비싼 착각이다.',
+        '진입 이유를 한 줄로 못 쓰면 들어갈 이유도 없다.',
+        '손절선을 옮기는 순간, 계획은 기도로 바뀐다.',
+        '클릭하기 전에 묻자. 이게 셋업인가, 충동인가?'
+      ];
+      const praiseLines = [
+        '오늘도 귀찮음을 이겼다. 그게 진짜 실력이다.',
+        '말보다 실행이 먼저였다. 오늘은 네가 이겼다.',
+        '대충 넘기지 않고 끝냈다. 이런 하루가 계좌를 지킨다.',
+        '선택한 루틴 완료. 오늘만큼은 스스로를 인정해도 된다.',
+        '충동 대신 원칙을 선택했다. 이게 프로의 방향이다.',
+        '게으름을 이긴 게 아니라 시스템으로 눌러버렸다.',
+        '오늘의 승리는 수익이 아니라 규칙을 지킨 것이다.',
+        '체크리스트를 끝낸 너는 생각보다 훨씬 독하다.',
+        '한 번의 완벽함보다 이런 반복이 훨씬 강하다.',
+        '오늘도 시장보다 먼저 자신을 통제했다.',
+        '귀찮아도 해냈다. 결국 살아남는 쪽은 이런 사람이다.',
+        '준비를 끝냈다. 이제 기다릴 자격이 생겼다.'
+      ];
+
+      const getClock = () => {
+        const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US',{
+          timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',
+          hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+        }).formatToParts(new Date()).filter(part => part.type !== 'literal').map(part => [part.type,part.value]));
+        const actualMs = Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day));
+        const routineMs = actualMs - (Number(parts.hour) < 8 ? 86400000 : 0);
+        return {
+          actualKey:new Date(actualMs).toISOString().slice(0,10),
+          routineKey:new Date(routineMs).toISOString().slice(0,10),
+          actualWeekday:new Date(actualMs).getUTCDay(),
+          actualHour:Number(parts.hour),
+          actualTime:parts.hour + ':' + parts.minute
+        };
+      };
+      const priorActiveKey = key => {
+        let value = Date.parse(key + 'T00:00:00Z') - 86400000;
+        while (true) {
+          const candidate = new Date(value).toISOString().slice(0,10);
+          let candidateState = {};
+          try { candidateState = JSON.parse(localStorage.getItem(DAY_PREFIX + candidate) || '{}'); } catch (_) {}
+          const skippedRest = candidateState.mode === 'rest' && !candidateState.completed;
+          if (new Date(value).getUTCDay() !== 6 && !skippedRest) return candidate;
+          value -= 86400000;
+        }
+      };
+      let clock = getClock();
+      let routineKey = clock.routineKey;
+      let displayedDate = '';
+      let state = {};
+      let meta = { streak:0,lastCompletedKey:'',pendingBlogRead:false };
+      let activeNoteId = '';
+
+      const loadMeta = () => {
+        try {
+          const saved = JSON.parse(localStorage.getItem(META_KEY) || '{}');
+          meta = {
+            streak:Number(saved.streak)||0,
+            lastCompletedKey:saved.lastCompletedKey||'',
+            pendingBlogRead:Boolean(saved.pendingBlogRead)
+          };
+        } catch (_) {}
+      };
+      const loadState = () => {
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem(DAY_PREFIX + routineKey) || '{}'); } catch (_) {}
+        const currentFlow = saved.flowVersion === FLOW_VERSION;
+        const legacyCompletion = !currentFlow && Boolean(saved.completed);
+        const legacyTradeAnswers = Object.fromEntries(Object.entries(saved.tradeChecks||{})
+          .filter(([,value]) => Boolean(value)).map(([key]) => [key,'yes']));
+        const tradeAnswers = currentFlow?saved.tradeAnswers||{}:legacyTradeAnswers;
+        const firstUnanswered = tradeBoxes.findIndex(box => !['yes','no'].includes(tradeAnswers[box.dataset.id]));
+        const defaultCursor = firstUnanswered < 0 ? tradeBoxes.length : firstUnanswered;
+        const savedLosses = Number(saved.losses)||0;
+        const pendingBlogRead = meta.pendingBlogRead || (savedLosses >= 2 && !Boolean(saved.blogRead));
+        if (pendingBlogRead && !meta.pendingBlogRead) {
+          meta.pendingBlogRead = true;
+          saveMeta();
+        }
+        state = {
+          flowVersion:FLOW_VERSION,
+          mode:['simple','full','rest'].includes(saved.mode)?saved.mode:'full',
+          checks:currentFlow?saved.checks||{}:{},
+          tradeAnswers,
+          tradeNotes:currentFlow && saved.tradeNotes && typeof saved.tradeNotes === 'object'?saved.tradeNotes:{},
+          tradeCursor:currentFlow && Number.isInteger(saved.tradeCursor)?Math.max(0,Math.min(tradeBoxes.length,saved.tradeCursor)):defaultCursor,
+          mood:pendingBlogRead?'':saved.mood||'',
+          losses:pendingBlogRead?Math.max(2,savedLosses):savedLosses,
+          blogRead:pendingBlogRead?false:Boolean(saved.blogRead),scores:currentFlow?saved.scores||{}:{},
+          revengeReason:typeof saved.revengeReason === 'string'?saved.revengeReason:'',
+          revengeScenario:Boolean(saved.revengeScenario),wakeDone:Boolean(saved.wakeDone),
+          tradeCompletedTime:currentFlow && typeof saved.tradeCompletedTime === 'string'?saved.tradeCompletedTime:'',
+          warmupCompletedTimes:currentFlow && saved.warmupCompletedTimes && typeof saved.warmupCompletedTimes === 'object'?saved.warmupCompletedTimes:{},
+          praiseIndex:currentFlow && Number.isInteger(saved.praiseIndex)?saved.praiseIndex:null,
+          completed:currentFlow && Boolean(saved.completed)
+        };
+        allBoxes.forEach(box => box.checked = Boolean(state.checks[box.dataset.id]));
+        tradeBoxes.forEach(box => box.checked = state.tradeAnswers[box.dataset.id] === 'yes');
+        scores.forEach(input => input.value = state.scores[input.dataset.score] ?? '');
+        blogCheck.checked = state.blogRead;
+        revengeReason.value = state.revengeReason;
+        revengeScenario.checked = state.revengeScenario;
+        wakeCheck.checked = state.wakeDone;
+        enforceScoreGate();
+        if (!currentFlow) {
+          if (legacyCompletion) revokeTodayCompletion();
+          saveState();
+        }
+        const allTradeAnswered = tradeBoxes.every(box => ['yes','no'].includes(state.tradeAnswers[box.dataset.id]));
+        const answeredYes = tradeBoxes.filter(box => state.tradeAnswers[box.dataset.id] === 'yes').length;
+        const savedWarmupBoxes = state.mode === 'simple' ? simpleBoxes : fullBoxes;
+        const savedWarmupDone = savedWarmupBoxes.length > 0 && savedWarmupBoxes.every(box => box.checked);
+        const validCompletion = state.mode === 'simple'
+          ? savedWarmupDone
+          : savedWarmupDone && allTradeAnswered && answeredYes/tradeBoxes.length > .8 && scorePassed();
+        if (state.completed && !validCompletion) {
+          state.completed = false;
+          revokeTodayCompletion();
+          saveState();
+        }
+      };
+      const saveMeta = () => {
+        try { localStorage.setItem(META_KEY,JSON.stringify(meta)); } catch (_) {}
+      };
+      const revokeTodayCompletion = () => {
+        if (meta.lastCompletedKey !== routineKey) return;
+        meta.streak = Math.max(0,meta.streak-1);
+        meta.lastCompletedKey = meta.streak > 0 ? priorActiveKey(routineKey) : '';
+        saveMeta();
+      };
+      const saveState = () => {
+        state.flowVersion = FLOW_VERSION;
+        state.checks = Object.fromEntries(allBoxes.map(box => [box.dataset.id,box.checked]));
+        state.tradeChecks = Object.fromEntries(tradeBoxes.map(box => [box.dataset.id,state.tradeAnswers[box.dataset.id] === 'yes']));
+        state.scores = Object.fromEntries(scores.map(input => [input.dataset.score,input.value]));
+        try { localStorage.setItem(DAY_PREFIX + routineKey,JSON.stringify(state)); } catch (_) {}
+      };
+      const activeBoxes = () => state.mode === 'simple' ? simpleBoxes : fullBoxes;
+      const activeItems = () => state.mode === 'simple' ? simpleItems : fullItems;
+      const formatPercent = value => Number.isInteger(value) ? String(value) : value.toFixed(1);
+      const scorePassed = () => {
+        const value = Number(state.scores[scoreKey]);
+        return state.scores[scoreKey] !== '' && Number.isFinite(value) && value >= 75 && value <= 100;
+      };
+      const enforceScoreGate = () => {
+        if (scorePassed()) return;
+        const box = fullBoxes[2];
+        if (!box) return;
+        box.checked = false;
+        state.checks[box.dataset.id] = false;
+      };
+      const restPeriod = () => clock.actualWeekday === 6 || (clock.actualWeekday === 0 && clock.actualHour < 18);
+      const registerCompletion = () => {
+        state.completed = true;
+        if (meta.lastCompletedKey !== routineKey) {
+          meta.streak = meta.lastCompletedKey === priorActiveKey(routineKey) ? meta.streak + 1 : 1;
+          meta.lastCompletedKey = routineKey;
+          state.praiseIndex = Math.floor(Math.random()*praiseLines.length);
+          saveMeta();
+        } else if (state.praiseIndex === null) {
+          state.praiseIndex = Math.floor(Math.random()*praiseLines.length);
+        }
+        saveState();
+      };
+      const render = allowCompletion => {
+        clock = getClock();
+        const scheduledRest = restPeriod();
+        const manualRest = state.mode === 'rest';
+        const resting = scheduledRest || manualRest;
+        const selectedMode = scheduledRest ? 'rest' : state.mode;
+        modeButtons.forEach(button => {
+          const selected = button.dataset.mode === selectedMode;
+          button.classList.toggle('is-active',selected);
+          button.setAttribute('aria-pressed',String(selected));
+          button.disabled = scheduledRest;
+        });
+        modeLists.forEach(list => list.hidden = resting || list.dataset.modeList !== state.mode);
+        rest.hidden = !resting;
+        active.hidden = resting;
+        if (scheduledRest) {
+          restTitle.textContent = '현재는 휴식 시간';
+          restText.textContent = '토요일은 쉬고, 일요일 오후 6시부터 체크리스트를 시작합니다.';
+        } else if (manualRest) {
+          restTitle.textContent = '오늘은 쉬는 날';
+          restText.textContent = '충전에 집중하세요. 바쁜날 또는 일반 루틴을 누르면 다시 시작할 수 있습니다.';
+        }
+        const boxes = activeBoxes();
+        const items = activeItems();
+        const busyMode = state.mode === 'simple';
+        const scoreOkay = scorePassed();
+        const completed = boxes.filter(box => box.checked).length;
+        const warmupDone = completed === boxes.length && (busyMode || scoreOkay);
+        const tradeAnswered = tradeBoxes.filter(box => ['yes','no'].includes(state.tradeAnswers[box.dataset.id])).length;
+        const tradeYes = tradeBoxes.filter(box => state.tradeAnswers[box.dataset.id] === 'yes').length;
+        const tradeScore = tradeYes/tradeBoxes.length*100;
+        const tradeDone = tradeAnswered === tradeBoxes.length;
+        const tradePassed = tradeDone && tradeScore > 80;
+        state.tradeCursor = Math.max(0,Math.min(tradeBoxes.length,Number(state.tradeCursor)||0));
+        const checklistAtEnd = state.tradeCursor >= tradeBoxes.length;
+        const warmupTimeKey = busyMode ? 'simple' : 'full';
+        let timeChanged = false;
+        if (tradeDone && checklistAtEnd && !state.tradeCompletedTime) {
+          state.tradeCompletedTime = clock.actualTime;
+          timeChanged = true;
+        } else if (!tradeDone && state.tradeCompletedTime) {
+          state.tradeCompletedTime = '';
+          timeChanged = true;
+        }
+        if (warmupDone && !state.warmupCompletedTimes[warmupTimeKey]) {
+          state.warmupCompletedTimes[warmupTimeKey] = clock.actualTime;
+          timeChanged = true;
+        }
+        if (timeChanged) saveState();
+        const warmupCompletedTime = state.warmupCompletedTimes[warmupTimeKey] || '';
+        const allDone = warmupDone && (busyMode || (tradePassed && checklistAtEnd));
+        const percent = Math.round(completed/boxes.length*100);
+        count.textContent = completed + ' / ' + boxes.length + ' · ' + percent + '%';
+        fill.style.width = percent + '%';
+        progress.setAttribute('aria-valuenow',String(percent));
+        const tradePercent = Math.round(tradeAnswered/tradeBoxes.length*100);
+        tradeCount.textContent = '답변 ' + tradeAnswered + ' / ' + tradeBoxes.length + ' · 예 ' + tradeYes;
+        tradeFill.style.width = tradePercent + '%';
+        tradeProgress.setAttribute('aria-valuenow',String(tradePercent));
+
+        scores.forEach(input => input.disabled = state.completed);
+        gptReview.disabled = state.completed;
+        scoreStatus.dataset.pass = String(scoreOkay);
+        scoreStatus.textContent = state.completed
+          ? '완료 기록 보호 · 점수 수정은 오늘 전체 초기화 후 가능합니다.'
+          : scoreOkay
+            ? '통과 · 메인 시나리오의 엘리엇파동 구조 점수가 75점 이상입니다.'
+            : '미통과 · 예측 적중이 아닌 엘리엇파동 구조 유효성 점수가 75점 이상이어야 합니다.';
+        moods.forEach(button => {
+          const selected = button.dataset.mood === state.mood;
+          button.classList.toggle('is-active',selected);
+          button.classList.toggle('is-danger',selected && state.mood !== 'calm');
+          button.setAttribute('aria-pressed',String(selected));
+        });
+        losses.forEach(button => {
+          const selected = Number(button.dataset.loss) === state.losses;
+          button.classList.toggle('is-active',selected);
+          button.classList.toggle('is-danger',selected && state.losses >= 2);
+          button.setAttribute('aria-pressed',String(selected));
+        });
+        blogReadRow.hidden = state.losses < 2;
+        blogCheck.checked = state.blogRead;
+        const revengeReady = state.revengeReason.trim().length >= 5 && state.revengeScenario;
+        revengeReview.hidden = state.mood !== 'revenge';
+        if (revengeReason.value !== state.revengeReason) revengeReason.value = state.revengeReason;
+        revengeScenario.checked = state.revengeScenario;
+        tiredReview.hidden = state.mood !== 'tired';
+        wakeCheck.checked = state.wakeDone;
+
+        let blocked = false;
+        let message = '상태 점검 완료 · 순서대로 진행하세요.';
+        if (state.losses >= 2 && !state.blogRead) {
+          blocked = true;
+          message = '연속 2회 손실 · 블로그 루틴을 전부 정독하고 완료 체크하세요.';
+        } else if (!state.mood) {
+          blocked = true;
+          message = '현재 상태를 먼저 선택하세요.';
+        } else if (state.mood === 'revenge' && !revengeReady) {
+          blocked = true;
+          message = '복구 욕구 · 복구가 필요한 이유를 적고 진입 시나리오를 다시 검토하세요.';
+        } else if (state.mood === 'tired' && !state.wakeDone) {
+          blocked = true;
+          message = '피곤함 · 먼저 잠을 깨보세요. 그래도 너무 피곤하면 쉬는 날을 선택하고 자세요.';
+        } else if (['rush','angry'].includes(state.mood)) {
+          blocked = true;
+          message = moodNames[state.mood] + ' 상태입니다. 침착해질 때까지 매매 금지.';
+        } else if (state.mood === 'revenge') {
+          message = '복구 욕구 점검 완료 · 재검토한 시나리오만 실행하세요.';
+        } else if (state.mood === 'tired') {
+          message = '잠 깨기 완료 · 집중이 흐려지면 즉시 쉬는 날로 전환하세요.';
+        }
+        gate.dataset.blocked = String(blocked);
+        gate.textContent = message;
+
+        const readyForTradeChecklist = !busyMode && !blocked;
+        const readyForWarmup = !blocked && (busyMode || (tradePassed && checklistAtEnd));
+        preflight.hidden = busyMode ? !blocked : tradeDone && checklistAtEnd && !blocked;
+        tradeStage.hidden = resting || busyMode || !readyForTradeChecklist || checklistAtEnd;
+        tradeSummary.hidden = resting || busyMode || !tradeDone || !checklistAtEnd;
+        warmupStage.hidden = resting || !readyForWarmup || warmupDone;
+        warmupStep.textContent = busyMode ? '바쁜날 · 워밍업 체크리스트' : '2단계 · 진입 조건 워밍업';
+
+        allBoxes.forEach(box => {
+          box.disabled = true;
+          const item = box.closest('.rt-item');
+          item.hidden = true;
+          item.dataset.disabled = 'true';
+        });
+        const current = boxes.findIndex(box => !box.checked);
+        const scenarioIndex = busyMode ? -1 : 2;
+        items.forEach((item,index) => {
+          item.hidden = index !== current;
+          const disabled = blocked || (!busyMode && index === scenarioIndex && !scoreOkay);
+          boxes[index].disabled = disabled;
+          item.dataset.disabled = String(disabled);
+        });
+        scorePanel.hidden = resting || busyMode || !readyForWarmup || warmupDone || current !== scenarioIndex;
+        next.textContent = current === -1 ? '워밍업 완료' : '지금 할 일 · ' + (current+1) + ' / ' + boxes.length;
+
+        tradeBoxes.forEach((box,index) => {
+          const answer = state.tradeAnswers[box.dataset.id];
+          box.checked = answer === 'yes';
+          box.disabled = true;
+          tradeItems[index].hidden = true;
+          tradeItems[index].dataset.disabled = 'true';
+          tradeItems[index].dataset.answer = answer || '';
+        });
+        const tradeCurrent = checklistAtEnd ? -1 : state.tradeCursor;
+        if (readyForTradeChecklist && tradeCurrent >= 0) {
+          tradeItems[tradeCurrent].hidden = false;
+          tradeItems[tradeCurrent].dataset.disabled = 'false';
+          tradeSection.textContent = tradeSectionNames[tradeItems[tradeCurrent].dataset.section];
+        }
+        const currentAnswer = tradeCurrent >= 0 ? state.tradeAnswers[tradeBoxes[tradeCurrent].dataset.id] : '';
+        tradeAnswerButtons.forEach(button => {
+          const selected = button.dataset.answer === currentAnswer;
+          button.disabled = resting || !readyForTradeChecklist || tradeCurrent < 0;
+          button.classList.toggle('is-active',selected);
+          button.setAttribute('aria-pressed',String(selected));
+        });
+        tradeBack.disabled = resting || !readyForTradeChecklist || state.tradeCursor <= 0;
+        tradeNext.textContent = tradeCurrent === -1
+          ? '매매 체크리스트 완료'
+          : '매매 점검 · ' + (tradeCurrent+1) + ' / ' + tradeBoxes.length;
+        const currentItem = tradeCurrent >= 0 ? tradeItems[tradeCurrent] : null;
+        const currentBox = tradeCurrent >= 0 ? tradeBoxes[tradeCurrent] : null;
+        const noteLabel = currentItem?.dataset.noteLabel || '';
+        const nextNoteId = noteLabel && currentBox ? currentBox.dataset.id : '';
+        if (nextNoteId !== activeNoteId) noteError.hidden = true;
+        activeNoteId = nextNoteId;
+        notePanel.hidden = !activeNoteId;
+        if (activeNoteId) {
+          noteTitle.textContent = noteLabel;
+          noteInput.placeholder = currentItem.dataset.notePlaceholder || '핵심 근거를 짧게 적기';
+          const savedNote = state.tradeNotes[activeNoteId] || '';
+          if (noteInput.value !== savedNote) noteInput.value = savedNote;
+        } else if (noteInput.value) {
+          noteInput.value = '';
+        }
+
+        const noItems = tradeBoxes.map((box,index) => state.tradeAnswers[box.dataset.id] === 'no'
+          ? tradeItems[index].querySelector('.rt-title').textContent : null).filter(Boolean);
+        summaryScore.dataset.pass = String(tradePassed);
+        summaryScore.textContent = '예 ' + tradeYes + ' / ' + tradeBoxes.length + ' · ' + formatPercent(tradeScore) + '%';
+        summaryVerdict.dataset.pass = String(tradePassed);
+        summaryVerdict.textContent = tradePassed
+          ? warmupDone
+            ? '통과 · 워밍업까지 완료되어 진입 조건을 충족했습니다.'
+            : '통과 · 최종 진입 조건인 워밍업을 완료하세요.'
+          : '미통과 · 예 비율이 80%를 초과해야 워밍업과 진입이 허용됩니다.';
+        retryNo.hidden = noItems.length === 0;
+        const warmupName = busyMode ? '바쁜날 워밍업 3개 대분류' : '일반 루틴 워밍업 3개 대분류';
+        const scoreSummary = !busyMode && state.scores[scoreKey] !== undefined && state.scores[scoreKey] !== ''
+          ? 'GPT 엘파 구조 점수: ' + state.scores[scoreKey] + '점 · ' + (scorePassed()?'통과':'미통과') + ' (기준 ≥75점)'
+          : '';
+        const analysisNotes = tradeItems.map((item,index) => {
+          const id = tradeBoxes[index].dataset.id;
+          const note = (state.tradeNotes[id] || '').trim();
+          if (!note || !item.dataset.noteLabel) return '';
+          const number = item.querySelector('.rt-title').textContent.split('.')[0];
+          const answer = state.tradeAnswers[id] === 'yes' ? '예' : state.tradeAnswers[id] === 'no' ? '아니요' : '미답변';
+          return '- ' + number + '. ' + item.dataset.noteLabel + ' [' + answer + ']: ' + note;
+        }).filter(Boolean);
+        const summaryLines = [
+          '[매매 체크 ' + clock.actualKey + ']',
+          '매매 체크 완료 시간: ' + (state.tradeCompletedTime ? state.tradeCompletedTime + ' KST' : '미완료'),
+          '결과: 예 ' + tradeYes + ' / 아니요 ' + (tradeBoxes.length-tradeYes) + ' · ' + formatPercent(tradeScore) + '% · ' + (tradePassed?'통과':'미통과') + ' (기준 >80%)',
+          '아니요: ' + (noItems.length ? noItems.join(' / ') : '없음'),
+          analysisNotes.length ? '[핵심 분석 메모]\n' + analysisNotes.join('\n') : '',
+          '워밍업: ' + (warmupDone ? warmupName + ' 완료' : tradePassed ? warmupName + ' ' + completed + '/' + boxes.length : '진입 보류'),
+          '워밍업 완료 시간: ' + (warmupCompletedTime ? warmupCompletedTime + ' KST' : '미완료'),
+          scoreSummary,
+          '최종: ' + (allDone ? '진입 조건 충족' : tradePassed ? '워밍업 완료 전 진입 금지' : '진입 보류')
+        ].filter(Boolean).join('\n');
+        if (summaryText.value !== summaryLines) {
+          summaryText.value = summaryLines;
+          copySummary.textContent = '텍스트 복사';
+        }
+
+        if (state.completed && (!allDone || resting || blocked)) {
+          state.completed = false;
+          state.praiseIndex = null;
+          revokeTodayCompletion();
+          saveState();
+        } else if (allDone && !resting && !blocked && allowCompletion) {
+          registerCompletion();
+        }
+        const visibleStreak = [routineKey,priorActiveKey(routineKey)].includes(meta.lastCompletedKey) ? meta.streak : 0;
+        const rewardUnlocked = [0,6].includes(clock.actualWeekday) && visibleStreak >= 5;
+        streak.textContent = '🔥 ' + visibleStreak + '일 연속';
+        weekendReward.hidden = !rewardUnlocked;
+        done.hidden = !allDone || blocked || resting;
+        if (allDone && !blocked && !resting && state.praiseIndex !== null) praise.textContent = (busyMode ? '바쁜날 워밍업 완료 ' : '진입 조건 충족 ') + '(' + warmupCompletedTime + ' KST) · ' + praiseLines[state.praiseIndex%praiseLines.length];
+      };
+      const updateMotivation = () => {
+        const today = getClock().actualKey;
+        if (today === displayedDate) return;
+        const dayNumber = Math.floor(Date.parse(today+'T00:00:00Z')/86400000);
+        motivation.textContent = spicy[dayNumber%spicy.length];
+        displayedDate = today;
+      };
+
+      allBoxes.forEach(box => box.addEventListener('change',() => { saveState();render(true); }));
+      tradeAnswerButtons.forEach(button => button.addEventListener('click',() => {
+        const currentIndex = state.tradeCursor;
+        const current = tradeBoxes[currentIndex];
+        const currentItem = tradeItems[currentIndex];
+        if (!current || button.disabled) return;
+        const noteRequired = Boolean(currentItem.dataset.noteLabel);
+        const note = (state.tradeNotes[current.dataset.id] || '').trim();
+        if (button.dataset.answer === 'yes' && noteRequired && note.length < 5) {
+          noteError.hidden = false;
+          noteInput.focus();
+          return;
+        }
+        noteError.hidden = true;
+        const wasAnswered = ['yes','no'].includes(state.tradeAnswers[current.dataset.id]);
+        state.tradeAnswers[current.dataset.id] = button.dataset.answer;
+        if (wasAnswered) {
+          state.tradeCursor = Math.min(tradeBoxes.length,currentIndex+1);
+        } else {
+          const nextUnanswered = tradeBoxes.findIndex((box,index) => index > currentIndex && !['yes','no'].includes(state.tradeAnswers[box.dataset.id]));
+          state.tradeCursor = nextUnanswered < 0 ? tradeBoxes.length : nextUnanswered;
+        }
+        saveState();
+        render(true);
+      }));
+      tradeBack.addEventListener('click',() => {
+        if (tradeBack.disabled || state.tradeCursor <= 0) return;
+        state.tradeCursor -= 1;
+        saveState();
+        render(false);
+      });
+      summaryBack.addEventListener('click',() => {
+        state.tradeCursor = Math.max(0,tradeBoxes.length-1);
+        saveState();
+        render(false);
+      });
+      noteInput.addEventListener('input',() => {
+        if (!activeNoteId) return;
+        state.tradeNotes[activeNoteId] = noteInput.value;
+        noteError.hidden = true;
+        saveState();
+      });
+      retryNo.addEventListener('click',() => {
+        if (state.completed) {
+          state.completed = false;
+          state.praiseIndex = null;
+          revokeTodayCompletion();
+        }
+        const firstNo = tradeBoxes.findIndex(box => state.tradeAnswers[box.dataset.id] === 'no');
+        tradeBoxes.forEach(box => {
+          if (state.tradeAnswers[box.dataset.id] === 'no') delete state.tradeAnswers[box.dataset.id];
+        });
+        state.tradeCursor = firstNo < 0 ? 0 : firstNo;
+        saveState();
+        render(false);
+      });
+      copySummary.addEventListener('click',async () => {
+        let copied = false;
+        try {
+          await navigator.clipboard.writeText(summaryText.value);
+          copied = true;
+        } catch (_) {
+          summaryText.focus();
+          summaryText.select();
+          try { copied = document.execCommand('copy'); } catch (_) {}
+        }
+        copySummary.textContent = copied ? '복사 완료' : '직접 복사해 주세요';
+      });
+      modeButtons.forEach(button => button.addEventListener('click',() => {
+        if (restPeriod()) return;
+        state.mode = button.dataset.mode;
+        saveState();
+        render(false);
+      }));
+      moods.forEach(button => button.addEventListener('click',() => {
+        if (state.losses >= 2 && !state.blogRead) return;
+        const nextMood = button.dataset.mood;
+        if (state.mood !== nextMood) {
+          state.revengeReason = '';
+          state.revengeScenario = false;
+          state.wakeDone = false;
+        }
+        state.mood = nextMood;
+        saveState();
+        render(false);
+      }));
+      losses.forEach(button => button.addEventListener('click',() => {
+        const value = Number(button.dataset.loss);
+        if (state.losses >= 2 && !state.blogRead && value < 2) return;
+        state.losses = value;
+        if (value >= 2) {
+          state.blogRead = false;
+          state.mood = '';
+        } else {
+          state.blogRead = false;
+        }
+        meta.pendingBlogRead = value >= 2;
+        saveMeta();
+        saveState();
+        render(false);
+      }));
+      blogCheck.addEventListener('change',() => {
+        state.blogRead = blogCheck.checked;
+        state.mood = '';
+        meta.pendingBlogRead = state.losses >= 2 && !state.blogRead;
+        saveMeta();
+        saveState();
+        render(false);
+      });
+      revengeReason.addEventListener('input',() => {
+        state.revengeReason = revengeReason.value;
+        saveState();
+        render(false);
+      });
+      revengeScenario.addEventListener('change',() => {
+        state.revengeScenario = revengeScenario.checked;
+        saveState();
+        render(false);
+      });
+      wakeCheck.addEventListener('change',() => {
+        state.wakeDone = wakeCheck.checked;
+        saveState();
+        render(false);
+      });
+      sleepButton.addEventListener('click',() => {
+        state.mode = 'rest';
+        state.mood = '';
+        state.wakeDone = false;
+        saveState();
+        render(false);
+      });
+      scores.forEach(input => input.addEventListener('input',() => {
+        if (input.value !== '') input.value = String(Math.min(100,Math.max(0,Number(input.value)||0)));
+        state.scores[input.dataset.score] = input.value;
+        enforceScoreGate();
+        saveState();
+        render(false);
+      }));
+      root.querySelector('.rt-reset').addEventListener('click',() => {
+        const pendingBlogRead = meta.pendingBlogRead || (state.losses >= 2 && !state.blogRead);
+        revokeTodayCompletion();
+        allBoxes.forEach(box => box.checked = false);
+        tradeBoxes.forEach(box => box.checked = false);
+        scores.forEach(input => input.value = '');
+        state = { flowVersion:FLOW_VERSION,mode:'full',checks:{},tradeChecks:{},tradeAnswers:{},tradeNotes:{},tradeCursor:0,mood:'',losses:pendingBlogRead?2:0,blogRead:false,scores:{},revengeReason:'',revengeScenario:false,wakeDone:false,tradeCompletedTime:'',warmupCompletedTimes:{},praiseIndex:null,completed:false };
+        meta.pendingBlogRead = pendingBlogRead;
+        saveMeta();
+        saveState();
+        render(false);
+      });
+
+      const tabs = [...root.querySelectorAll('.rt-tab')];
+      const panels = [...root.querySelectorAll('.rt-news-panel')];
+      tabs.forEach(tab => tab.addEventListener('click',() => {
+        const panelId = tab.getAttribute('aria-controls');
+        tabs.forEach(item => {
+          const selected = item === tab;
+          item.classList.toggle('is-active',selected);
+          item.setAttribute('aria-selected',String(selected));
+        });
+        panels.forEach(panel => panel.hidden = panel.id !== panelId);
+      }));
+      const copyAgentPrompt = async prompt => {
+        try {
+          if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            await navigator.clipboard.writeText(prompt);
+            return true;
+          }
+        } catch (_) {}
+        const helper = document.createElement('textarea');
+        helper.value = prompt;
+        helper.setAttribute('readonly','');
+        helper.style.position = 'fixed';
+        helper.style.opacity = '0';
+        root.appendChild(helper);
+        helper.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch (_) {}
+        helper.remove();
+        return copied;
+      };
+      const sendFollowUp = async (button,title,prompt) => {
+        const original = button.textContent;
+        if (!window.openai || typeof window.openai.sendFollowUpMessage !== 'function') {
+          const copied = await copyAgentPrompt(prompt);
+          button.textContent = copied ? '에이전트 요청문 복사됨' : '에이전트에서 실행';
+          return;
+        }
+        button.disabled = true;
+        button.textContent = '요청 중…';
+        try {
+          await window.openai.sendFollowUpMessage({title,prompt});
+          button.textContent = '요청됨';
+        } catch (_) {
+          button.disabled = false;
+          button.textContent = original;
+        }
+      };
+      root.querySelector('.rt-refresh').addEventListener('click',event => {
+        sendFollowUp(event.currentTarget,'전날 핵심 이슈 업데이트','한국시간 오전 8시를 기준으로 바로 전 달력 날짜의 전 세계, 미국, 한국, 코인 뉴스를 웹에서 확인해 주세요. 트레이딩에 영향이 큰 이슈를 영역별로 정확히 3개씩, 총 12개 선별해 각각 한국어 한 문장으로 요약하고 출처 링크를 붙여 주세요. 이 대화의 트레이딩 체크리스트에서 전날 핵심 이슈 12개와 기준일만 최신 정보로 업데이트한 뒤 체크리스트를 다시 보여 주세요.');
+      });
+      root.querySelector('.rt-gpt-review').addEventListener('click',event => {
+        sendFollowUp(event.currentTarget,'메인 엘리엇파동 시나리오 구조 검토','내가 만든 롱 2개와 숏 2개 중 메인으로 정한 엘리엇파동 시나리오 1개를 검토해 주세요. 아직 메인 시나리오가 어느 경로인지 명확하지 않으면 먼저 요청해 주세요. 예측이 맞을지, 현재 진입 타이밍이 좋은지, ICT·다이버전스나 손익비가 충분한지를 채점하지 말고 오직 제시한 카운팅이 엘리엇파동 규칙상 유효한 시나리오인지와 구조의 완성도를 평가해 주세요. 100점 만점으로 ① 파동 유형 정의와 절대 규칙 위반 여부 25점 ② 내부 세부파동과 degree 정합성 25점 ③ 피보나치 비율·목표의 구조적 정합성 25점 ④ 무효화 기준·재카운팅 조건·대안 처리의 명확성 25점으로 정확히 채점해 주세요. 임펄스·지그재그·플랫·삼각형·WXY·다이아고날 중 어떤 구조인지 밝히고, A·B·C 또는 1·2·3·4·5의 필수 내부파동 조건과 겹침·최단파·되돌림 규칙을 확인해 주세요. 결과가 진행 중이어도 규칙상 유효하면 인정하고, 틀릴 가능성만으로 감점하지 마세요. 정확한 총점과 감점 이유, 구조를 더 완성하기 위해 차트에 추가할 표기를 알려 주세요. 메인 시나리오의 엘리엇파동 구조 점수만 75점 이상이면 통과입니다.');
+      });
+      window.addEventListener('storage',event => {
+        if (![META_KEY,DAY_PREFIX + routineKey].includes(event.key)) return;
+        loadMeta();
+        loadState();
+        render(false);
+      });
+
+      loadMeta();
+      loadState();
+      updateMotivation();
+      render(true);
+      setInterval(() => {
+        const latest = getClock();
+        if (latest.routineKey !== routineKey) {
+          routineKey = latest.routineKey;
+          clock = latest;
+          loadState();
+          render(true);
+        } else {
+          render(false);
+        }
+        updateMotivation();
+      },1000);
+    })();
+  </script>
+</div>
