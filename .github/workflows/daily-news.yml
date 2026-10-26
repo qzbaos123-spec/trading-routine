@@ -30,8 +30,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: Refresh news and update status
+        id: refresh
+        continue-on-error: true
         run: python .github/scripts/update_news.py
       - name: Commit updated news or delay status
+        if: always()
         run: |
           if git diff --quiet -- index.html; then
             echo "No page changes to commit."
@@ -42,3 +45,8 @@ jobs:
           git add index.html
           git commit -m "chore: refresh daily news and status"
           git push
+      - name: Mark refresh failure after publishing the delay banner
+        if: steps.refresh.outcome == 'failure'
+        run: |
+          echo "RSS refresh failed. The delay banner was published; inspect the refresh step logs."
+          exit 1
