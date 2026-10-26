@@ -210,6 +210,31 @@ def headline_matches(expected_title, source, candidates):
     return False
 
 
+
+def select_relevant_paragraphs(paragraphs, expected_title, source):
+    """Prefer paragraphs containing the article headline's key terms."""
+    title = expected_title.strip()
+    suffix = " - " + (source or "")
+    if suffix.strip() and title.endswith(suffix):
+        title = title[:-len(suffix)]
+    terms = set(re.findall(r"[A-Za-z0-9가-힣]+", title.lower()))
+    stop_words = {
+        "the", "and", "for", "with", "from", "that", "this", "into", "over",
+        "after", "before", "about", "what", "when", "why", "how", "are", "was",
+        "한국", "미국", "세계", "뉴스", "관련", "오늘", "전망", "분석", "보도",
+    }
+    terms = {term for term in terms if len(term) >= 2 and term not in stop_words}
+    candidates = [p for p in paragraphs if len(p) >= 45]
+    if not candidates or not terms:
+        return candidates[:8]
+    scored = [(sum(1 for term in terms if term in p.lower()), p) for p in candidates]
+    best = max(score for score, _ in scored)
+    required = 2 if len(terms) >= 4 else 1
+    if best < required:
+        return []
+    threshold = max(required, (best + 1) // 2)
+    return [p for score, p in scored if score >= threshold][:8]
+
 def extract_source_body(html_text, expected_title="", source=""):
     parser = ArticleTextParser()
     parser.feed(html_text)
@@ -224,14 +249,17 @@ def extract_source_body(html_text, expected_title="", source=""):
     # after a matching H1 within <main>. This prevents related-story teasers
     # from being mistaken for the current article.
     article_paragraphs = [p for p in parser.article_paragraphs if len(p) >= 45]
-    if len(" ".join(article_paragraphs[:8])) >= 100:
-        body = " ".join(article_paragraphs[:8]).strip()
+    if article_paragraphs:
         if parser.headlines and expected_title and not headline_matches(expected_title, source, parser.headlines):
             return ""
-        return body
+        relevant = select_relevant_paragraphs(article_paragraphs, expected_title, source)
+        body = " ".join(relevant).strip()
+        if len(body) >= 100:
+            return body
     main_paragraphs = [p for p in parser.main_paragraphs_after_h1 if len(p) >= 45]
     if parser.headlines and expected_title and headline_matches(expected_title, source, parser.headlines):
-        body = " ".join(main_paragraphs[:8]).strip()
+        relevant = select_relevant_paragraphs(main_paragraphs, expected_title, source)
+        body = " ".join(relevant).strip()
         if len(body) >= 100:
             return body
     return ""
