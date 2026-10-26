@@ -44,9 +44,21 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git commit -m "chore: refresh daily news and status"
-          # Rebase if a workflow/config commit landed while this run was collecting.
-          git pull --rebase origin main
+          # If another refresh changed the dashboard meanwhile, rerun against the newest page.
+          rerun_failed=0
+          if ! git pull --rebase origin main; then
+            git rebase --abort || true
+            git fetch origin main
+            git reset --hard origin/main
+            python .github/scripts/update_news.py || rerun_failed=1
+            git add index.html
+            git commit -m "chore: refresh news after syncing latest dashboard"
+          fi
           git push
+          if [ "$rerun_failed" -eq 1 ]; then
+            echo "The retry failed; the delayed-status page was still published."
+            exit 1
+          fi
       - name: Mark refresh failure after publishing the delay banner
         if: steps.refresh.outcome == 'failure'
         run: |
