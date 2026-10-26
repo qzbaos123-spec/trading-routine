@@ -114,6 +114,13 @@ KOREA_MEDIA_QUERIES = [
     'site:newsis.com 경제 금융 기업 금융정책',
     'site:korea.kr 경제 금융 기업 산업정책',
 ]
+KOREA_MEDIA_RSS = [
+    ("연합뉴스 경제 RSS", "https://www.yna.co.kr/rss/economy.xml"),
+    ("매일경제 금융 RSS", "https://www.mk.co.kr/rss/30100041/"),
+    ("한국경제 경제 RSS", "https://www.hankyung.com/feed/economy"),
+    ("뉴시스 경제 RSS", "https://www.newsis.com/RSS/economy.xml"),
+    ("뉴시스 금융 RSS", "https://www.newsis.com/RSS/bank.xml"),
+]
 _TRANSLATION_CACHE = {}
 HANGUL_RE = re.compile(r"[가-힣]")
 
@@ -549,7 +556,8 @@ def fetch_items(category, queries, now):
     feeds = [("Google News", query, "") for query in queries]
     if category == "korea":
         feeds += [("주요 매체 검색", query, "") for query in KOREA_MEDIA_QUERIES]
-        feeds += [("공식 RSS", label, url) for label, url in KOREA_OFFICIAL_FEEDS]
+        feeds += [("언론사 RSS", label, url) for label, url in KOREA_MEDIA_RSS]
+        feeds += [("공식기관 RSS", label, url) for label, url in KOREA_OFFICIAL_FEEDS]
 
     by_link = {}
     successful = 0
