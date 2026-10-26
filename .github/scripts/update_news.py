@@ -655,6 +655,18 @@ def update_page(success, message, collected=None):
     #trading-routine-dashboard .rt-news-shortage { padding:10px 8px; color:var(--rt-muted); font-size:11px; line-height:1.5; list-style:none; border-top:1px dashed var(--rt-border); }
     """
         inner = inner.replace("</style>", news_css + "\n</style>", 1)
+    if ".rt-news-empty {" not in inner:
+        inner = inner.replace(
+            "</style>",
+            '#trading-routine-dashboard .rt-news-empty { padding:14px 8px; color:var(--rt-muted); font-size:12px; line-height:1.6; list-style:none; }\n</style>',
+            1,
+        )
+    if ".rt-news-shortage {" not in inner:
+        inner = inner.replace(
+            "</style>",
+            '#trading-routine-dashboard .rt-news-shortage { padding:10px 8px; color:var(--rt-muted); font-size:11px; line-height:1.5; list-style:none; border-top:1px dashed var(--rt-border); }\n</style>',
+            1,
+        )
     escaped_inner = escape(inner, quote=True)
     source = source[:match.start(1)] + escaped_inner + source[match.end(1):]
     PAGE.write_text(source, encoding="utf-8")
