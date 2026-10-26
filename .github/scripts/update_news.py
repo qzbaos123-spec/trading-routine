@@ -575,7 +575,7 @@ def fetch_items(category, queries, now):
             excluded = {}
             try:
                 request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 trading-routine-news-bot/1.0"})
-                with urllib.request.urlopen(request, timeout=18) as response:
+                with urllib.request.urlopen(request, timeout=8) as response:
                     payload = response.read()
                 root = ET.fromstring(payload)
                 successful += 1
