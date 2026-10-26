@@ -114,7 +114,7 @@ def update_page(success, message, collected=None):
     .rt-news-status.is-delayed strong { color:#b45309; }
     """
     if ".rt-news-status {" not in inner:
-        inner = inner.replace("</style>", css + "\\n</style>", 1)
+        inner = inner.replace("</style>", css + "\n</style>", 1)
     escaped_inner = escape(inner, quote=True)
     source = source[:match.start(1)] + escaped_inner + source[match.end(1):]
     PAGE.write_text(source, encoding='utf-8')
