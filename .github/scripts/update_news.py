@@ -63,7 +63,7 @@ def translate_title_to_korean(title):
 def fetch_items(query, start_date, end_date):
     # Use the Korean Google News edition for all four categories, then enforce
     # the exact previous KST calendar day independently of RSS query matching.
-    q = f"{query} when:2d"
+    q = query
     url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({
         "q": q, **RSS_LOCALE
     })
