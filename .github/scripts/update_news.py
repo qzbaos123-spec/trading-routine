@@ -533,10 +533,16 @@ def is_relevant_title(category, title):
 
 
 def parse_feed_date(node):
+    values = []
     for tag in ("pubDate", "{http://purl.org/dc/elements/1.1/}date", "date", "published", "updated"):
         value = node.findtext(tag)
-        if not value:
-            continue
+        if value:
+            values.append(value.strip())
+    for child in list(node):
+        local_name = child.tag.rsplit("}", 1)[-1].lower()
+        if ("date" in local_name or "time" in local_name) and child.text:
+            values.append(child.text.strip())
+    for value in dict.fromkeys(values):
         try:
             parsed = parsedate_to_datetime(value)
             if parsed.tzinfo is None:
@@ -549,7 +555,12 @@ def parse_feed_date(node):
                     parsed = parsed.replace(tzinfo=KST)
                 return parsed.astimezone(timezone.utc)
             except (TypeError, ValueError, OverflowError):
-                continue
+                for fmt in ("%Y%m%d%H%M%S", "%Y%m%d", "%Y.%m.%d %H:%M:%S", "%Y.%m.%d", "%Y-%m-%d"):
+                    try:
+                        parsed = datetime.strptime(value, fmt).replace(tzinfo=KST)
+                        return parsed.astimezone(timezone.utc)
+                    except (TypeError, ValueError, OverflowError):
+                        continue
     return None
 
 
