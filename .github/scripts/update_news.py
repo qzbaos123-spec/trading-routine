@@ -97,7 +97,7 @@ CATEGORIES = {
     ),
 }
 
-MAX_ITEMS = 5
+MAX_ITEMS = 3
 _TRANSLATION_CACHE = {}
 HANGUL_RE = re.compile(r"[가-힣]")
 
