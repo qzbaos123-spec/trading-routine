@@ -563,6 +563,34 @@ def fetch_items(category, queries, start_date, end_date):
         item["summary"] = summary
         if resolved_link.startswith("https://") and "news.google.com" not in urllib.parse.urlparse(resolved_link).netloc:
             item["link"] = resolved_link
+
+    # A market-looking headline can still resolve to a domestic story. For the
+    # world panel, remove summaries that are clearly Korea-only and contain no
+    # international market context; do not guess when the body is unavailable.
+    if category == "world":
+        local_body_terms = [
+            "한국은행", "한은", "한국 경제", "한국 증시", "국내총생산",
+            "국내 gdp", "국내 증시", "한국 수출",
+        ]
+        global_body_terms = [
+            "세계", "글로벌", "국제", "미국", "연준", "달러", "유가", "국채",
+            "유럽", "중국", "일본", "world", "global", "international",
+            "federal reserve", "crude oil", "oil prices",
+        ]
+        filtered = []
+        for item in items:
+            summary = (item.get("summary") or "").lower()
+            body_verified = summary not in ("본문 확인 불가", "한국어 번역 실패")
+            local_only = (
+                body_verified
+                and any(_keyword_matches(summary, term) for term in local_body_terms)
+                and not any(_keyword_matches(summary, term) for term in global_body_terms)
+            )
+            if local_only:
+                print(f"Skipping Korea-only summary from world panel: {item['original_title']}")
+                continue
+            filtered.append(item)
+        items = filtered
     return items
 
 
