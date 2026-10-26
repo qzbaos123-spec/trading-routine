@@ -98,6 +98,20 @@ CATEGORIES = {
 }
 
 MAX_ITEMS = 3
+KOREA_OFFICIAL_FEEDS = [
+    ("한국은행", "https://www.bok.or.kr/portal/bbs/B0000552/news.rss?menuNo=200690"),
+    ("금융위원회", "https://www.fsc.go.kr/about/fsc_bbs_rss/?fid=0111"),
+    ("재정경제부", "https://mofe.go.kr/com/detailRssTagService.do?bbsId=MOSFBBS_000000000028"),
+    ("중소벤처기업부", "https://mss.go.kr/rss/smba/board/86.do"),
+]
+KOREA_MEDIA_QUERIES = [
+    'site:yna.co.kr 경제 금융 기업 정책 수출 금리',
+    'site:mk.co.kr 경제 금융 기업 증시 정책',
+    'site:hankyung.com 경제 금융 기업 증시 정책',
+    'site:sedaily.com 경제 금융 기업 증시 정책',
+    'site:newsis.com 경제 금융 기업 금융정책',
+    'site:korea.kr 경제 금융 기업 산업정책',
+]
 _TRANSLATION_CACHE = {}
 HANGUL_RE = re.compile(r"[가-힣]")
 
