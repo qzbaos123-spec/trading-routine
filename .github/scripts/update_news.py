@@ -542,93 +542,98 @@ def parse_feed_date(node):
 
 
 def fetch_items(category, queries, start_date, end_date):
-    """Collect a broad candidate pool, filter by market relevance, then rank by time."""
-    by_link = {}
-    successful_feeds = 0
-    for query in queries:
-        url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({
-            "q": query, **RSS_LOCALE
-        })
-        request = urllib.request.Request(
-            url, headers={"User-Agent": "trading-routine-news-bot/1.0"}
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=25) as response:
-                payload = response.read()
-            root = ET.fromstring(payload)
-            successful_feeds += 1
-        except Exception as exc:
-            print(f"RSS query failed ({category}; {query}): {str(exc)[:120]}")
-            continue
-        for node in root.findall("./channel/item"):
-            original_title = (node.findtext("title") or "").strip()
-            link = (node.findtext("link") or "").strip()
-            published = (node.findtext("pubDate") or "").strip()
-            source_node = node.find("source")
-            source = (source_node.text or "").strip() if source_node is not None else ""
-            if (not original_title or not link or not link.startswith("https://")
-                    or link in by_link or not is_relevant_title(category, original_title)):
-                continue
-            try:
-                published_at = parsedate_to_datetime(published).astimezone(KST)
-                if not (start_date <= published_at.date() < end_date):
-                    continue
-            except (TypeError, ValueError, OverflowError):
-                continue
-            by_link[link] = {"original_title": original_title, "link": link,
-                             "source": source, "published": published_at}
+    """Search the last day first; extend to three days if the category is sparse."""
+    now_utc = datetime.now(timezone.utc)
+    feeds = [("Google News", query, "") for query in queries]
+    if category == "korea":
+        feeds += [("주요 매체 검색", query, "") for query in KOREA_MEDIA_QUERIES]
+        feeds += [("공식 RSS", label, url) for label, url in KOREA_OFFICIAL_FEEDS]
 
-    if successful_feeds == 0:
+    by_link = {}
+    successful = 0
+    for hours in (24, 72):
+        cutoff = now_utc - timedelta(hours=hours)
+        print(f"[{category}] 최근 {hours}시간 검색 시작; 목표 3건")
+        for source_group, query, direct_url in feeds:
+            label = f"{source_group} | {query}"
+            if direct_url:
+                url = direct_url
+            else:
+                q = f"({query}) when:{1 if hours == 24 else 3}d"
+                url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q, **RSS_LOCALE})
+            seen = in_window = passed = 0
+            excluded = {}
+            try:
+                request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 trading-routine-news-bot/1.0"})
+                with urllib.request.urlopen(request, timeout=18) as response:
+                    payload = response.read()
+                root = ET.fromstring(payload)
+                successful += 1
+            except Exception as exc:
+                print(f"[{category}] RSS 오류 | {label} | 사유={str(exc)[:100]}")
+                continue
+            nodes = root.findall("./channel/item") or root.findall(".//item")
+            for node in nodes:
+                seen += 1
+                title = (node.findtext("title") or "").strip()
+                link = (node.findtext("link") or "").strip()
+                published = parse_feed_date(node)
+                source_node = node.find("source")
+                source = (source_node.text or "").strip() if source_node is not None else ""
+                if not source:
+                    source = source_group if direct_url else "Google News"
+                if not title or not link:
+                    reason = "제목 또는 링크 없음"
+                elif published is None:
+                    reason = "게시 시각 파싱 불가"
+                elif published < cutoff or published > now_utc + timedelta(minutes=10):
+                    reason = f"최근 {hours}시간 범위 밖"
+                else:
+                    in_window += 1
+                    reason = ""
+                    if not is_relevant_title(category, title):
+                        reason = "분야별 경제·금융·기업·정책 관련성 부족 또는 제외 키워드"
+                if reason:
+                    excluded[reason] = excluded.get(reason, 0) + 1
+                    continue
+                passed += 1
+                if link not in by_link:
+                    by_link[link] = {
+                        "original_title": title, "link": link, "source": source,
+                        "published": published.astimezone(KST), "published_utc": published,
+                    }
+            why = ", ".join(f"{reason} {count}건" for reason, count in excluded.items()) or "없음"
+            print(f"[{category}] 검색어/출처={label} | 피드={seen}건 | 기간 내={in_window}건 | 관련성 통과={passed}건 | 제외={why}")
+        print(f"[{category}] 최근 {hours}시간 중복 제거 후 관련 후보={len(by_link)}건")
+        if len(by_link) >= 3:
+            break
+        if hours == 24:
+            print(f"[{category}] 24시간 후보 부족({len(by_link)}/3); 72시간으로 확장")
+    if successful == 0:
         raise RuntimeError(f"{category} RSS 검색이 모두 실패했습니다.")
-    # Crucially, relevance filtering happens before selecting the latest five.
-    raw_items = sorted(by_link.values(), key=lambda item: item["published"], reverse=True)[:MAX_ITEMS]
-    if not raw_items:
-        print(f"No market-relevant stories found for {category}; leaving category short.")
-        return []
-    items = []
-    for item in raw_items:
-        item["title"] = translate_title_to_korean(item["original_title"])
-        items.append(item)
-    # Resolve/read article pages concurrently; unreadable bodies stay explicitly labeled.
+
+    items = sorted(by_link.values(), key=lambda item: item["published_utc"], reverse=True)[:MAX_ITEMS]
+    source_counts = {}
+    for item in items:
+        source_counts[item["source"]] = source_counts.get(item["source"], 0) + 1
+    print(f"[{category}] 최종 후보 출처별 건수=" + (", ".join(f"{name}:{count}" for name, count in source_counts.items()) or "없음"))
+    for item in items:
+        try:
+            item["title"] = translate_title_to_korean(item["original_title"])
+        except Exception as exc:
+            item["title"] = item["original_title"]
+            print(f"[{category}] 제목 번역 실패 | {item['source']} | {str(exc)[:100]}")
     with ThreadPoolExecutor(max_workers=4) as pool:
-        summaries = list(pool.map(
-            lambda item: fetch_article_summary(item["link"], item["original_title"], item["source"]),
-            items
-        ))
+        summaries = list(pool.map(lambda item: fetch_article_summary(item["link"], item["original_title"], item["source"]), items))
     for item, (summary, resolved_link) in zip(items, summaries):
         item["summary"] = summary
         if resolved_link.startswith("https://") and "news.google.com" not in urllib.parse.urlparse(resolved_link).netloc:
             item["link"] = resolved_link
-
-    # A market-looking headline can still resolve to a domestic story. For the
-    # world panel, remove summaries that are clearly Korea-only and contain no
-    # international market context; do not guess when the body is unavailable.
-    if category == "world":
-        local_body_terms = [
-            "한국은행", "한은", "한국 경제", "한국 증시", "국내총생산",
-            "국내 gdp", "국내 증시", "한국 수출",
-        ]
-        global_body_terms = [
-            "세계", "글로벌", "국제", "미국", "연준", "달러", "유가", "국채",
-            "유럽", "중국", "일본", "world", "global", "international",
-            "federal reserve", "crude oil", "oil prices",
-        ]
-        filtered = []
-        for item in items:
-            summary = (item.get("summary") or "").lower()
-            body_verified = summary not in ("본문 확인 불가", "한국어 번역 실패")
-            local_only = (
-                body_verified
-                and any(_keyword_matches(summary, term) for term in local_body_terms)
-                and not any(_keyword_matches(summary, term) for term in global_body_terms)
-            )
-            if local_only:
-                print(f"Skipping Korea-only summary from world panel: {item['original_title']}")
-                continue
-            filtered.append(item)
-        items = filtered
+        if summary in ("본문 확인 불가", "한국어 번역 실패"):
+            print(f"[{category}] 본문 확인 미완료 | 출처={item['source']} | 제목={item['original_title']} | 상태={summary}")
+        else:
+            print(f"[{category}] 본문 확인 및 요약 완료 | 출처={item['source']} | 제목={item['original_title']}")
     return items
-
 
 def render_panel(category, items):
     lis = []
