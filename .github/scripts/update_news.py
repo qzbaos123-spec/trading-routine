@@ -86,7 +86,8 @@ def update_page(success, message, collected=None):
             if count != 1:
                 raise RuntimeError(f'뉴스 패널을 찾을 수 없습니다: {category}')
         date_pattern = r'<small class="rt-news-date">.*?</small>'
-        date_label = f'<small class="rt-news-date">{now:%Y.%m.%d} 뉴스 · {now:%Y.%m.%d %H:%M} KST 갱신 · 문장을 누르면 출처 확인</small>'
+        news_day = now.date() - timedelta(days=1)
+        date_label = f'<small class="rt-news-date">{news_day:%Y.%m.%d} 뉴스 · {now:%Y.%m.%d %H:%M} KST 갱신 · 문장을 누르면 출처 확인</small>'
         inner, count = re.subn(date_pattern, lambda _: date_label, inner, count=1, flags=re.DOTALL)
         if count != 1:
             raise RuntimeError('뉴스 날짜 표시를 찾을 수 없습니다.')
