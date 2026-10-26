@@ -96,6 +96,7 @@ class ArticleTextParser(HTMLParser):
         self.paragraph_depth = 0
         self.paragraph_parts = []
         self.paragraphs = []
+        self.all_paragraphs = []
         self.jsonld_active = False
         self.jsonld_parts = []
         self.jsonld_blocks = []
@@ -104,7 +105,7 @@ class ArticleTextParser(HTMLParser):
         attrs = dict(attrs)
         if tag in ("article", "main"):
             self.content_depth += 1
-        if tag == "p" and self.content_depth > 0:
+        if tag == "p":
             if self.paragraph_depth == 0:
                 self.paragraph_parts = []
             self.paragraph_depth += 1
@@ -118,7 +119,9 @@ class ArticleTextParser(HTMLParser):
             if self.paragraph_depth == 0:
                 paragraph = " ".join(" ".join(self.paragraph_parts).split())
                 if paragraph:
-                    self.paragraphs.append(paragraph)
+                    self.all_paragraphs.append(paragraph)
+                    if self.content_depth > 0:
+                        self.paragraphs.append(paragraph)
                 self.paragraph_parts = []
         if tag in ("article", "main") and self.content_depth > 0:
             self.content_depth -= 1
@@ -162,6 +165,16 @@ def extract_source_body(html_text):
         except (ValueError, TypeError):
             continue
     paragraphs = [p for p in parser.paragraphs if len(p) >= 45]
+    if len(" ".join(paragraphs[:8])) < 100:
+        # Some publishers omit semantic <article>/<main> wrappers. Use substantial
+        # paragraph text as a fallback, filtering common navigation boilerplate.
+        boilerplate = ("subscribe", "sign up", "advertisement", "privacy policy",
+                       "cookie policy", "all rights reserved", "read more", "관련기사",
+                       "개인정보처리방침", "구독 신청")
+        paragraphs = [
+            p for p in parser.all_paragraphs
+            if len(p) >= 60 and not any(term in p.lower() for term in boilerplate)
+        ]
     body = " ".join(paragraphs[:8]).strip()
     return body if len(body) >= 100 else ""
 
@@ -178,30 +191,37 @@ def summarize_verified_body(body):
 
 def fetch_article_summary(link):
     """Read the publisher page; failures are explicit rather than guessed."""
+    resolved_link = link
     try:
         request = urllib.request.Request(
             link, headers={"User-Agent": "Mozilla/5.0 (compatible; trading-routine-news-bot/1.0)"}
         )
         with urllib.request.urlopen(request, timeout=8) as response:
+            resolved_link = response.geturl() or link
             content_type = response.headers.get("Content-Type", "")
             if "html" not in content_type.lower() and "text" not in content_type.lower():
-                return "본문 확인 불가"
+                print(f"Article body unavailable: non-text content ({resolved_link}, {content_type})")
+                return "본문 확인 불가", resolved_link
             raw = response.read(2_000_000)
             charset = response.headers.get_content_charset() or "utf-8"
             html_text = raw.decode(charset, errors="replace")
         body = extract_source_body(html_text)
         if not body:
-            return "본문 확인 불가"
+            parser = ArticleTextParser()
+            parser.feed(html_text)
+            print(f"Article body unavailable: no readable article text ({resolved_link}; article paragraphs={len(parser.paragraphs)}, page paragraphs={len(parser.all_paragraphs)})")
+            return "본문 확인 불가", resolved_link
         excerpt = summarize_verified_body(body)
         if not excerpt:
-            return "본문 확인 불가"
+            print(f"Article body unavailable: no extractable sentences ({resolved_link})")
+            return "본문 확인 불가", resolved_link
         try:
-            return translate_text_to_korean(excerpt)
+            return translate_text_to_korean(excerpt), resolved_link
         except Exception:
-            return "한국어 번역 실패"
+            return "한국어 번역 실패", resolved_link
     except Exception as exc:
         print(f"Article body unavailable ({link}): {str(exc)[:100]}")
-        return "본문 확인 불가"
+        return "본문 확인 불가", resolved_link
 
 
 def fetch_items(queries, start_date, end_date):
@@ -241,7 +261,9 @@ def fetch_items(queries, start_date, end_date):
     items = []
     for item in raw_items:
         item["title"] = translate_title_to_korean(item.pop("original_title"))
-        item["summary"] = fetch_article_summary(item["link"])
+        item["summary"], resolved_link = fetch_article_summary(item["link"])
+        if resolved_link.startswith("https://") and "news.google.com" not in urllib.parse.urlparse(resolved_link).netloc:
+            item["link"] = resolved_link
         items.append(item)
     return items
 
