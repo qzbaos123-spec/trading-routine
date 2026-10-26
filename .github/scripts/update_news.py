@@ -20,6 +20,7 @@ PAGE = ROOT / "index.html"
 KST = timezone(timedelta(hours=9))
 RSS_LOCALE = {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}
 # Each category uses market-focused queries and a strict headline relevance gate.
+# Search windows and source-level exclusion counts are recorded for diagnostics.
 # The selector intentionally returns fewer than five stories when there is not enough signal.
 CATEGORIES = {
     "world": (
