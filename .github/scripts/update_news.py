@@ -600,7 +600,8 @@ def update_page(success, message, collected=None):
     #trading-routine-dashboard .rt-news-title { display:inline-block; font-weight:600; line-height:1.5; }
     #trading-routine-dashboard .rt-news-meta { margin:3px 0 5px; color:var(--rt-muted); font-size:11px; line-height:1.45; }
     #trading-routine-dashboard .rt-news-meta a { color:var(--rt-green); text-decoration:underline; }
-    #trading-routine-dashboard .rt-news-summary { margin:0; color:var(--rt-text); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }\n    #trading-routine-dashboard .rt-news-empty { padding:14px 8px; color:var(--rt-muted); font-size:12px; line-height:1.6; list-style:none; }
+    #trading-routine-dashboard .rt-news-summary { margin:0; color:var(--rt-text); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+    #trading-routine-dashboard .rt-news-empty { padding:14px 8px; color:var(--rt-muted); font-size:12px; line-height:1.6; list-style:none; }
     """
         inner = inner.replace("</style>", news_css + "\n</style>", 1)
     escaped_inner = escape(inner, quote=True)
