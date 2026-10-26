@@ -62,12 +62,12 @@ CATEGORIES = {
     "korea": (
         "한국 경제·금융·기업 뉴스",
         [
-            "한국 경제 증시 코스피 코스닥 주가 상승 하락 외국인 기관 매수 매도",
-            "한국은행 기준금리 원달러 환율 국고채 채권 금리 금융정책",
-            "삼성전자 SK하이닉스 반도체 수출 기업 실적 공시 투자",
-            '"Korea economy" OR KOSPI OR KOSDAQ OR "Bank of Korea" OR "Korean won" OR exports',
-            "국내 증시 증권시장 금융시장 ETF IPO 배당 실적 전망",
-            "한국 기업 실적 수출 산업정책 금융위원회 금융감독원",
+            "코스피 OR 코스닥 OR \'한국 경제\' OR \'국내 증시\'",
+            "한국은행 OR 기준금리 OR 원달러 OR 국고채 OR 금융정책",
+            "삼성전자 OR SK하이닉스 OR \'반도체 수출\' OR \'기업 실적\'",
+            '"Korea economy" OR KOSPI OR KOSDAQ OR "Bank of Korea" OR "Korean won" OR "Korea exports"',
+            "\'국내 증시\' OR 증권시장 OR 금융시장 OR 배당 OR 공시",
+            "금융위원회 OR 금융감독원 OR 산업정책 OR \'한국 수출\'",
         ],
         [
             "korea economy", "korean economy", "kospi", "kosdaq", "bank of korea",
@@ -82,6 +82,8 @@ CATEGORIES = {
             "외국인", "기관", "선물", "ETF", "IPO", "배당", "공시", "투자", "금융위원회",
             "금융감독원", "재정경제부", "중소벤처기업부", "산업부", "정부 정책", "정부 대책",
             "규제", "세제", "세금", "공급망", "기업 투자", "산업정책", "경제정책", "가계대출",
+            "한은", "소비자물가", "생산자물가", "경상수지", "무역", "영업이익",
+            "매출", "순이익", "수주", "설비투자", "추경", "예산", "기획재정부",
         ],
     ),
     "crypto": (
@@ -111,12 +113,14 @@ KOREA_OFFICIAL_FEEDS = [
     ("중소벤처기업부", "https://mss.go.kr/rss/smba/board/86.do"),
 ]
 KOREA_MEDIA_QUERIES = [
-    'site:yna.co.kr 경제 금융 기업 정책 수출 금리',
-    'site:mk.co.kr 경제 금융 기업 증시 정책',
-    'site:hankyung.com 경제 금융 기업 증시 정책',
-    'site:sedaily.com 경제 금융 기업 증시 정책',
-    'site:newsis.com 경제 금융 기업 금융정책',
-    'site:korea.kr 경제 금융 기업 산업정책',
+    'site:bok.or.kr (금리 OR 물가 OR 경제전망)',
+    'site:fsc.go.kr (금융 OR 정책 OR 대출)',
+    'site:yna.co.kr (경제 OR 금융 OR 기업 OR 정책 OR 수출 OR 금리)',
+    'site:mk.co.kr (경제 OR 금융 OR 기업 OR 정책 OR 수출 OR 금리)',
+    'site:hankyung.com (경제 OR 금융 OR 기업 OR 정책 OR 수출 OR 금리)',
+    'site:sedaily.com (경제 OR 금융 OR 기업 OR 정책 OR 수출 OR 금리)',
+    'site:newsis.com (경제 OR 금융 OR 기업 OR 정책 OR 수출 OR 금리)',
+    'site:korea.kr (경제 OR 금융 OR 기업 OR 정책 OR 수출 OR 금리)',
 ]
 KOREA_MEDIA_RSS = [
     ("연합뉴스 경제 RSS", "https://www.yna.co.kr/rss/economy.xml"),
@@ -483,7 +487,7 @@ def is_relevant_title(category, title):
         "레시피", "운세", "패션쇼", "결혼식", "학교 급식", "날씨 예보",
         "교통사고", "살인 사건", "생활 꿀팁", "주식 분석", "기술적 분석",
         "자율 투자 실험", "클로드, s&p 500을 이겨줘",
-        "교육청", "학교", "학생", "인재 연간", "인재 양성", "교육 과정",
+        "교육청", "인재 연간", "인재 양성", "교육 과정",
         "장관상 수상", "대회 개최", "축제 개최", "채용 박람회",
     ]
     if any(_keyword_matches(normalized, word) for word in irrelevant):
@@ -641,18 +645,21 @@ def fetch_items(category, queries, now):
                     if not is_relevant_title(category, title):
                         reason = "분야별 경제·금융·기업·정책 관련성 부족 또는 제외 키워드"
                 if reason:
+                    print(f"[{category}] 기사 제외 | 출처={source} | 제목={title[:160]} | 사유={reason}")
                     excluded[reason] = excluded.get(reason, 0) + 1
                     excluded_examples.setdefault(reason, [])
                     if title and len(excluded_examples[reason]) < 2:
                         excluded_examples[reason].append(title[:100])
                     continue
                 passed += 1
+                if link in by_link:
+                    print(f"[{category}] 중복 제외 | 출처={source} | 제목={title[:160]} | 사유=동일 링크")
                 if link not in by_link:
                     by_link[link] = {
                         "original_title": title, "link": link, "source": source,
                         "published": published.astimezone(KST), "published_utc": published,
                     }
-            why = ", ".join(f"{reason} {count}건 (예: {"; ".join(excluded_examples.get(reason, []))})" for reason, count in excluded.items()) or "없음"
+            why = ", ".join("{} {}건 (예: {})".format(reason, count, "; ".join(excluded_examples.get(reason, []))) for reason, count in excluded.items()) or "없음"
             print(f"[{category}] 검색어/출처={label} | 피드={seen}건 | 기간 내={in_window}건 | 관련성 통과={passed}건 | 제외={why}")
         print(f"[{category}] 최근 {hours}시간 중복 제거 후 관련 후보={len(by_link)}건")
         if len(by_link) >= 3:
@@ -697,7 +704,7 @@ def render_panel(category, items):
         title = escape(item["title"])
         link = escape(item["link"], quote=True)
         source = escape(item["source"] or "출처 미상")
-        published = item["published"].strftime("%H:%M KST")
+        published = item["published"].strftime("%Y.%m.%d %H:%M KST")
         summary = escape(item.get("summary") or "본문 확인 불가")
         lis.append(
             f'<li class="rt-news-item">'
@@ -710,7 +717,7 @@ def render_panel(category, items):
     if not lis:
         lis.append(
             '<li class="rt-news-empty" role="status">'
-            '관련성 기준을 충족하는 경제·금융·기업·시장 정책 기사가 부족합니다. '
+            '최근 72시간 검색에서 표시할 경제·금융·기업·정책 기사를 확보하지 못했습니다. '
             '확인되지 않은 기사로 채우지 않았습니다.</li>'
         )
     elif len(items) < MAX_ITEMS:
