@@ -346,7 +346,7 @@ def extract_source_body(html_text, expected_title="", source=""):
     article_paragraphs = [p for p in parser.article_paragraphs if len(p) >= 45]
     if article_paragraphs:
         if parser.headlines and expected_title and not headline_matches(expected_title, source, parser.headlines):
-            return ""
+            pass
         relevant = select_relevant_paragraphs(article_paragraphs, expected_title, source)
         body = " ".join(relevant).strip()
         if len(body) >= 100:
