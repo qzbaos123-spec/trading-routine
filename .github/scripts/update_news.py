@@ -19,12 +19,83 @@ ROOT = Path(__file__).resolve().parents[2]
 PAGE = ROOT / "index.html"
 KST = timezone(timedelta(hours=9))
 RSS_LOCALE = {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}
+# Each category uses market-focused queries and a strict headline relevance gate.
+# The selector intentionally returns fewer than five stories when there is not enough signal.
 CATEGORIES = {
-    "world": ("세계 주요 뉴스", ["세계", "국제 뉴스", "글로벌 뉴스"]),
-    "us": ("미국 경제 금융 시장 뉴스", ["미국", "미국 경제", "미국 주식"]),
-    "korea": ("한국 경제 증시 뉴스", ["한국 경제", "코스피", "한국 증시"]),
-    "crypto": ("암호화폐 비트코인 이더리움 뉴스", ["비트코인", "가상자산", "이더리움"]),
+    "world": (
+        "세계 경제·금융 시장 뉴스",
+        [
+            '"global markets" OR "world economy" OR "financial markets" OR "central bank"',
+            '"bond yields" OR inflation OR "interest rates" OR "oil prices" OR "trade policy"',
+            '"corporate earnings" OR recession OR GDP OR "currency markets" OR tariffs',
+            "세계 경제 금융시장 중앙은행 금리 물가 채권 환율 유가 무역 기업실적",
+        ],
+        [
+            "global markets", "financial markets", "world economy", "global economy",
+            "central bank", "interest rate", "inflation", "bond yield", "stock market",
+            "equities", "corporate earnings", "trade policy", "tariff", "oil price",
+            "crude oil", "currency", "forex", "recession", "gdp", "imf", "ecb",
+            "bank of japan", "market selloff", "investor", "financial", "economy",
+            "경제", "금리", "물가", "채권", "증시", "주식", "기업 실적", "중앙은행",
+            "환율", "유가", "무역", "관세", "국채", "금융", "투자", "성장률",
+        ],
+    ),
+    "us": (
+        "미국 경제·금융 시장 뉴스",
+        [
+            '"US economy" OR "Wall Street" OR "Federal Reserve" OR "stock market"',
+            '"S&P 500" OR Nasdaq OR "Treasury yields" OR "US inflation" OR "US jobs"',
+            '"US corporate earnings" OR "SEC regulation" OR "US trade policy" OR tariffs',
+            "미국 경제 연준 FOMC 뉴욕증시 미 국채 미국 기업 실적 달러 관세",
+        ],
+        [
+            "us economy", "u.s. economy", "american economy", "wall street",
+            "federal reserve", "fed", "fomc", "s&p 500", "nasdaq", "dow jones",
+            "treasury yield", "us inflation", "u.s. inflation", "us jobs", "us gdp",
+            "sec", "dollar", "us stocks", "american stocks", "corporate earnings",
+            "quarterly results", "merger", "acquisition", "ipo", "tariff",
+            "연준", "미국 경제", "미국 증시", "뉴욕증시", "미 국채", "미국 기업",
+            "미국 물가", "미국 고용", "달러", "관세", "실적 발표",
+        ],
+    ),
+    "korea": (
+        "한국 경제·금융·기업 뉴스",
+        [
+            "한국 경제 증시 코스피 코스닥 환율 금리 물가 수출",
+            "한국은행 기준금리 금융정책 국채 채권 기업 실적",
+            "삼성전자 SK하이닉스 현대차 LG에너지솔루션 실적 수출 투자",
+            '"Korea economy" OR KOSPI OR "Bank of Korea" OR "Korean won" OR exports',
+        ],
+        [
+            "korea economy", "korean economy", "kospi", "kosdaq", "bank of korea",
+            "korean won", "korea exports", "korean exports", "korea inflation",
+            "korean stocks", "korea stocks", "samsung", "sk hynix", "hyundai motor",
+            "lg energy", "naver", "kakao", "posco", "corporate earnings", "interest rate",
+            "한국 경제", "한국 증시", "코스피", "코스닥", "한국은행", "원화", "환율",
+            "수출", "수입", "무역수지", "물가", "기준금리", "금융정책", "국채",
+            "기업 실적", "삼성전자", "하이닉스", "현대차", "네이버", "카카오",
+            "반도체", "배터리", "주가", "증시", "투자",
+        ],
+    ),
+    "crypto": (
+        "코인·가상자산 시장 뉴스",
+        [
+            "비트코인 이더리움 가상자산 암호화폐 가격 시장",
+            "crypto markets bitcoin ethereum regulation stablecoin exchange",
+            '"bitcoin ETF" OR "ethereum ETF" OR "crypto regulation" OR stablecoin',
+            "가상자산 거래소 ETF 스테이블코인 블록체인 규제",
+        ],
+        [
+            "bitcoin", "btc", "ethereum", "ether", "crypto", "cryptocurrency",
+            "digital asset", "tokenization", "tokenized", "stablecoin", "defi",
+            "altcoin", "crypto exchange", "crypto regulation", "bitcoin etf",
+            "ethereum etf", "blockchain finance", "비트코인", "이더리움", "가상자산",
+            "암호화폐", "코인", "스테이블코인", "거래소", "토큰", "블록체인",
+            "가상자산 규제", "코인 시장", "암호화폐 시장",
+        ],
+    ),
 }
+
 MAX_ITEMS = 5
 _TRANSLATION_CACHE = {}
 HANGUL_RE = re.compile(r"[가-힣]")
@@ -355,9 +426,40 @@ def fetch_article_summary(link, expected_title="", source=""):
         print(f"Article body unavailable ({resolved_link}): {str(exc)[:100]}")
         return "본문 확인 불가", resolved_link
 
-def fetch_items(queries, start_date, end_date):
-    """Combine several Korean-locale searches to avoid sparse category feeds."""
+def _keyword_matches(title, keyword):
+    """Match English keywords as whole words and Korean phrases as substrings."""
+    keyword = keyword.lower().strip()
+    if not keyword:
+        return False
+    if HANGUL_RE.search(keyword):
+        return keyword in title
+    return re.search(r"(?<![a-z])" + re.escape(keyword) + r"(?![a-z])", title) is not None
+
+
+def is_relevant_title(category, title):
+    """Reject general-interest stories unless their headline signals market relevance."""
+    normalized = re.sub(r"\\s+", " ", title.lower()).strip()
+    irrelevant = [
+        "celebrity", "celebrities", "movie review", "film review", "box office",
+        "music festival", "reality show", "football match", "soccer match",
+        "basketball game", "sports results", "recipe", "restaurant review",
+        "travel guide", "horoscope", "fashion week", "wedding", "school lunch",
+        "crime scene", "murder investigation", "weather forecast", "traffic accident",
+        "연예인", "연예계", "드라마", "영화 리뷰", "박스오피스", "음악 축제",
+        "축구 경기", "야구 경기", "농구 경기", "스포츠 경기", "맛집", "여행지",
+        "레시피", "운세", "패션쇼", "결혼식", "학교 급식", "날씨 예보",
+        "교통사고", "살인 사건", "생활 꿀팁",
+    ]
+    if any(_keyword_matches(normalized, word) for word in irrelevant):
+        return False
+    keywords = CATEGORIES[category][2]
+    return any(_keyword_matches(normalized, keyword) for keyword in keywords)
+
+
+def fetch_items(category, queries, start_date, end_date):
+    """Collect a broad candidate pool, filter by market relevance, then rank by time."""
     by_link = {}
+    successful_feeds = 0
     for query in queries:
         url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({
             "q": query, **RSS_LOCALE
@@ -365,16 +467,22 @@ def fetch_items(queries, start_date, end_date):
         request = urllib.request.Request(
             url, headers={"User-Agent": "trading-routine-news-bot/1.0"}
         )
-        with urllib.request.urlopen(request, timeout=25) as response:
-            payload = response.read()
-        root = ET.fromstring(payload)
+        try:
+            with urllib.request.urlopen(request, timeout=25) as response:
+                payload = response.read()
+            root = ET.fromstring(payload)
+            successful_feeds += 1
+        except Exception as exc:
+            print(f"RSS query failed ({category}; {query}): {str(exc)[:120]}")
+            continue
         for node in root.findall("./channel/item"):
             original_title = (node.findtext("title") or "").strip()
             link = (node.findtext("link") or "").strip()
             published = (node.findtext("pubDate") or "").strip()
             source_node = node.find("source")
             source = (source_node.text or "").strip() if source_node is not None else ""
-            if not original_title or not link or not link.startswith("https://") or link in by_link:
+            if (not original_title or not link or not link.startswith("https://")
+                    or link in by_link or not is_relevant_title(category, original_title)):
                 continue
             try:
                 published_at = parsedate_to_datetime(published).astimezone(KST)
@@ -385,15 +493,18 @@ def fetch_items(queries, start_date, end_date):
             by_link[link] = {"original_title": original_title, "link": link,
                              "source": source, "published": published_at}
 
-    # Select recent items, translate headlines, and summarize only source text we can read.
+    if successful_feeds == 0:
+        raise RuntimeError(f"{category} RSS 검색이 모두 실패했습니다.")
+    # Crucially, relevance filtering happens before selecting the latest five.
     raw_items = sorted(by_link.values(), key=lambda item: item["published"], reverse=True)[:MAX_ITEMS]
     if not raw_items:
-        raise RuntimeError("전날 뉴스가 없습니다: " + " / ".join(queries))
+        print(f"No market-relevant stories found for {category}; leaving category short.")
+        return []
     items = []
     for item in raw_items:
         item["title"] = translate_title_to_korean(item["original_title"])
         items.append(item)
-    # Resolve/read article pages concurrently to keep the scheduled workflow bounded.
+    # Resolve/read article pages concurrently; unreadable bodies stay explicitly labeled.
     with ThreadPoolExecutor(max_workers=4) as pool:
         summaries = list(pool.map(
             lambda item: fetch_article_summary(item["link"], item["original_title"], item["source"]),
@@ -421,6 +532,12 @@ def render_panel(category, items):
             f'<a href="{link}" target="_blank" rel="noopener noreferrer">원문 링크</a></p>'
             f'<p class="rt-news-summary">{summary}</p>'
             f'</li>'
+        )
+    if not lis:
+        lis.append(
+            '<li class="rt-news-empty" role="status">'
+            '관련성 기준을 충족하는 경제·금융·기업·시장 정책 기사가 부족합니다. '
+            '확인되지 않은 기사로 채우지 않았습니다.</li>'
         )
     hidden = "" if category == "world" else " hidden"
     return (f'<div class="rt-news-panel" id="rt-panel-{category}" role="tabpanel" '
@@ -483,7 +600,7 @@ def update_page(success, message, collected=None):
     #trading-routine-dashboard .rt-news-title { display:inline-block; font-weight:600; line-height:1.5; }
     #trading-routine-dashboard .rt-news-meta { margin:3px 0 5px; color:var(--rt-muted); font-size:11px; line-height:1.45; }
     #trading-routine-dashboard .rt-news-meta a { color:var(--rt-green); text-decoration:underline; }
-    #trading-routine-dashboard .rt-news-summary { margin:0; color:var(--rt-text); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+    #trading-routine-dashboard .rt-news-summary { margin:0; color:var(--rt-text); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }\n    #trading-routine-dashboard .rt-news-empty { padding:14px 8px; color:var(--rt-muted); font-size:12px; line-height:1.6; list-style:none; }
     """
         inner = inner.replace("</style>", news_css + "\n</style>", 1)
     escaped_inner = escape(inner, quote=True)
