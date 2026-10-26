@@ -587,6 +587,7 @@ def fetch_items(category, queries, now):
                 url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q, **RSS_LOCALE})
             seen = in_window = passed = 0
             excluded = {}
+            excluded_examples = {}
             try:
                 request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 trading-routine-news-bot/1.0"})
                 with urllib.request.urlopen(request, timeout=8) as response:
@@ -619,6 +620,9 @@ def fetch_items(category, queries, now):
                         reason = "분야별 경제·금융·기업·정책 관련성 부족 또는 제외 키워드"
                 if reason:
                     excluded[reason] = excluded.get(reason, 0) + 1
+                    excluded_examples.setdefault(reason, [])
+                    if title and len(excluded_examples[reason]) < 2:
+                        excluded_examples[reason].append(title[:100])
                     continue
                 passed += 1
                 if link not in by_link:
@@ -626,7 +630,7 @@ def fetch_items(category, queries, now):
                         "original_title": title, "link": link, "source": source,
                         "published": published.astimezone(KST), "published_utc": published,
                     }
-            why = ", ".join(f"{reason} {count}건" for reason, count in excluded.items()) or "없음"
+            why = ", ".join(f"{reason} {count}건 (예: {"; ".join(excluded_examples.get(reason, []))})" for reason, count in excluded.items()) or "없음"
             print(f"[{category}] 검색어/출처={label} | 피드={seen}건 | 기간 내={in_window}건 | 관련성 통과={passed}건 | 제외={why}")
         print(f"[{category}] 최근 {hours}시간 중복 제거 후 관련 후보={len(by_link)}건")
         if len(by_link) >= 3:
