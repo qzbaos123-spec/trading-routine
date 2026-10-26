@@ -1,0 +1,39 @@
+name: Daily news refresh
+
+on:
+  schedule:
+    # 08:00 Korea Standard Time (UTC+9) = 23:00 UTC on the previous day.
+    - cron: "0 23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-news-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh-news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Refresh news and update status
+        run: python .github/scripts/update_news.py
+      - name: Commit updated news or delay status
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "No page changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "chore: refresh daily news and status"
+          git push

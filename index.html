@@ -1854,6 +1854,13 @@ html&gt;body{padding:0}&lt;/style&gt;
     #trading-routine-dashboard .rt-news-list a { color:var(--rt-text); text-decoration:none; word-break:keep-all; }
     #trading-routine-dashboard .rt-news-list a:hover { text-decoration:underline; text-underline-offset:3px; }
     #trading-routine-dashboard .rt-news-date { display:block; margin-top:9px; color:var(--rt-muted); font-size:11px; }
+    #trading-routine-dashboard .rt-news-status { display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; margin:0 0 12px; padding:10px 12px; border:1px solid var(--rt-border, #64748b); border-radius:10px; font-size:12px; }
+    #trading-routine-dashboard .rt-news-status strong { font-size:12px; }
+    #trading-routine-dashboard .rt-news-status span, #trading-routine-dashboard .rt-news-status small { color:var(--rt-muted, #64748b); }
+    #trading-routine-dashboard .rt-news-status.is-ok { border-color:#16803d; }
+    #trading-routine-dashboard .rt-news-status.is-ok strong { color:#16803d; }
+    #trading-routine-dashboard .rt-news-status.is-delayed { border-color:#b45309; background:color-mix(in srgb, #f59e0b 9%, transparent); }
+    #trading-routine-dashboard .rt-news-status.is-delayed strong { color:#b45309; }
     #trading-routine-dashboard .rt-preflight { margin-bottom:18px; }
     #trading-routine-dashboard .rt-preflight h3 { margin:0 0 10px; font-size:15px; font-weight:500; }
     #trading-routine-dashboard .rt-preflight-grid { display:grid; grid-template-columns:1.35fr .65fr; gap:14px; }
@@ -2033,6 +2040,7 @@ html&gt;body{padding:0}&lt;/style&gt;
       &lt;h3 id=&quot;rt-issues-title&quot;&gt;전날 핵심 이슈 · 영역별 3&lt;/h3&gt;
       &lt;button class=&quot;rt-link-action rt-refresh&quot; type=&quot;button&quot;&gt;뉴스 갱신 요청문 복사&lt;/button&gt;
     &lt;/div&gt;
+    &lt;div id=&quot;rt-news-status&quot; class=&quot;rt-news-status is-delayed&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;&lt;strong&gt;뉴스 갱신 지연&lt;/strong&gt;&lt;span&gt;자동 갱신 실행 결과를 아직 확인하지 못했습니다 · 기존 뉴스는 참고용입니다&lt;/span&gt;&lt;small&gt;마지막 페이지 반영: 2026.10.22 08:00 KST&lt;/small&gt;&lt;/div&gt;
     &lt;div class=&quot;rt-tabs&quot; role=&quot;tablist&quot; aria-label=&quot;핵심 이슈 영역&quot;&gt;
       &lt;button class=&quot;rt-tab is-active&quot; id=&quot;rt-tab-world&quot; type=&quot;button&quot; role=&quot;tab&quot; aria-selected=&quot;true&quot; aria-controls=&quot;rt-panel-world&quot;&gt;전 세계&lt;/button&gt;
       &lt;button class=&quot;rt-tab&quot; id=&quot;rt-tab-us&quot; type=&quot;button&quot; role=&quot;tab&quot; aria-selected=&quot;false&quot; aria-controls=&quot;rt-panel-us&quot;&gt;미국&lt;/button&gt;
