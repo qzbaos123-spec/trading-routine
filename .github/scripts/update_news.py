@@ -438,7 +438,7 @@ def _keyword_matches(title, keyword):
 
 def is_relevant_title(category, title):
     """Reject general-interest stories unless their headline signals market relevance."""
-    normalized = re.sub(r"\\s+", " ", title.lower()).strip()
+    normalized = re.sub(r"\s+", " ", title.lower()).strip()
     irrelevant = [
         "celebrity", "celebrities", "movie review", "film review", "box office",
         "music festival", "reality show", "football match", "soccer match",
@@ -614,9 +614,9 @@ def main():
     today = now.date()
     try:
         collected = {}
-        for category, (label, queries) in CATEGORIES.items():
-            print(f"Collecting {label}: {yesterday} KST (hl=ko, gl=KR, ceid=KR:ko)")
-            collected[category] = fetch_items(queries, yesterday, today)
+        for category, (label, queries, _keywords) in CATEGORIES.items():
+            print(f"Collecting {label}: {yesterday} KST (strict market relevance; hl=ko, gl=KR, ceid=KR:ko)")
+            collected[category] = fetch_items(category, queries, yesterday, today)
         update_page(True, "success", collected)
         print("News refreshed successfully.")
     except Exception as exc:
