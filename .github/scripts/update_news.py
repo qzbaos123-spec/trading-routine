@@ -520,6 +520,27 @@ def is_relevant_title(category, title):
     return any(_keyword_matches(normalized, keyword) for keyword in keywords)
 
 
+def parse_feed_date(node):
+    for tag in ("pubDate", "{http://purl.org/dc/elements/1.1/}date", "date", "published", "updated"):
+        value = node.findtext(tag)
+        if not value:
+            continue
+        try:
+            parsed = parsedate_to_datetime(value)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=KST)
+            return parsed.astimezone(timezone.utc)
+        except (TypeError, ValueError, OverflowError):
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=KST)
+                return parsed.astimezone(timezone.utc)
+            except (TypeError, ValueError, OverflowError):
+                continue
+    return None
+
+
 def fetch_items(category, queries, start_date, end_date):
     """Collect a broad candidate pool, filter by market relevance, then rank by time."""
     by_link = {}
