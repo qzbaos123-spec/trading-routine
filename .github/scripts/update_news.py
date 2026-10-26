@@ -75,7 +75,9 @@ CATEGORIES = {
             "한국 경제", "한국 증시", "코스피", "코스닥", "한국은행", "원화", "환율",
             "수출", "수입", "무역수지", "물가", "기준금리", "금융정책", "국채",
             "기업 실적", "삼성전자", "하이닉스", "현대차", "네이버", "카카오",
-            "반도체", "배터리", "주가", "증시", "투자",
+            "반도체", "배터리", "주가", "증시", "투자", "금융위원회", "금융감독원",
+            "재정경제부", "중소벤처기업부", "산업부", "정부 정책", "정부 대책", "규제",
+            "세제", "세금", "공급망", "기업 투자", "산업정책", "경제정책", "가계대출",
         ],
     ),
     "crypto": (
@@ -751,9 +753,11 @@ def main():
     today = now.date()
     try:
         collected = {}
+        print(f"수집 시작: {now:%Y-%m-%d %H:%M:%S} KST | 최근 24시간 우선, 부족하면 72시간까지 확장 | 분야별 목표 3건")
         for category, (label, queries, _keywords) in CATEGORIES.items():
-            print(f"Collecting {label}: {yesterday} KST (strict market relevance; hl=ko, gl=KR, ceid=KR:ko)")
-            collected[category] = fetch_items(category, queries, yesterday, today)
+            print(f"Collecting {label} (hl=ko, gl=KR, ceid=KR:ko)")
+            collected[category] = fetch_items(category, queries, now)
+            print(f"[{category}] 최종 표시 건수={len(collected[category])}/3")
         update_page(True, "success", collected)
         print("News refreshed successfully.")
     except Exception as exc:
