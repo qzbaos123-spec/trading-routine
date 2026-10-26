@@ -6,6 +6,7 @@ from html import escape, unescape
 from pathlib import Path
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 import sys
 import time
@@ -189,15 +190,61 @@ def summarize_verified_body(body):
     return " ".join(selected)
 
 
-def fetch_article_summary(link):
-    """Read the publisher page; failures are explicit rather than guessed."""
-    resolved_link = link
+
+def resolve_google_news_url(link):
+    """Resolve Google's opaque RSS redirect through its article-page RPC metadata."""
+    if "news.google.com" not in urllib.parse.urlparse(link).netloc:
+        return link
     try:
         request = urllib.request.Request(
-            link, headers={"User-Agent": "Mozilla/5.0 (compatible; trading-routine-news-bot/1.0)"}
+            link, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36"}
+        )
+        with urllib.request.urlopen(request, timeout=6) as response:
+            page = response.read(1_500_000).decode(
+                response.headers.get_content_charset() or "utf-8", errors="replace"
+            )
+        match = re.search(r'<c-wiz[^>]*\bdata-p="([^"]+)"', page)
+        if not match:
+            print(f"Google News URL unresolved: no data-p signature ({link})")
+            return link
+        data_p = unescape(match.group(1))
+        request_data = json.loads(data_p.replace("%.@.", '["garturlreq",'))
+        rpc_payload = json.dumps([[[
+            "Fbv4je", json.dumps(request_data[:-6] + request_data[-2:]), "null", "generic"
+        ]]])
+        post_body = urllib.parse.urlencode({"f.req": rpc_payload}).encode("utf-8")
+        post_request = urllib.request.Request(
+            "https://news.google.com/_/DotsSplashUi/data/batchexecute",
+            data=post_body,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0.0.0 Safari/537.36",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(post_request, timeout=6) as response:
+            payload = response.read().decode("utf-8", errors="replace")
+        payload = payload.removeprefix(")]}'")
+        result = json.loads(payload)
+        decoded = json.loads(result[0][2])
+        candidate = decoded[1]
+        if isinstance(candidate, str) and candidate.startswith("https://") and "news.google.com" not in urllib.parse.urlparse(candidate).netloc:
+            return candidate
+    except Exception as exc:
+        print(f"Google News URL unresolved ({link}): {str(exc)[:100]}")
+    return link
+
+def fetch_article_summary(link):
+    """Resolve and read the publisher page; never infer unavailable content."""
+    resolved_link = resolve_google_news_url(link)
+    if "news.google.com" in urllib.parse.urlparse(resolved_link).netloc:
+        return "본문 확인 불가", resolved_link
+    try:
+        request = urllib.request.Request(
+            resolved_link, headers={"User-Agent": "Mozilla/5.0 (compatible; trading-routine-news-bot/1.0)"}
         )
         with urllib.request.urlopen(request, timeout=8) as response:
-            resolved_link = response.geturl() or link
+            resolved_link = response.geturl() or resolved_link
             content_type = response.headers.get("Content-Type", "")
             if "html" not in content_type.lower() and "text" not in content_type.lower():
                 print(f"Article body unavailable: non-text content ({resolved_link}, {content_type})")
@@ -220,9 +267,8 @@ def fetch_article_summary(link):
         except Exception:
             return "한국어 번역 실패", resolved_link
     except Exception as exc:
-        print(f"Article body unavailable ({link}): {str(exc)[:100]}")
+        print(f"Article body unavailable ({resolved_link}): {str(exc)[:100]}")
         return "본문 확인 불가", resolved_link
-
 
 def fetch_items(queries, start_date, end_date):
     """Combine several Korean-locale searches to avoid sparse category feeds."""
@@ -261,10 +307,14 @@ def fetch_items(queries, start_date, end_date):
     items = []
     for item in raw_items:
         item["title"] = translate_title_to_korean(item.pop("original_title"))
-        item["summary"], resolved_link = fetch_article_summary(item["link"])
+        items.append(item)
+    # Resolve/read article pages concurrently to keep the scheduled workflow bounded.
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        summaries = list(pool.map(lambda item: fetch_article_summary(item["link"]), items))
+    for item, (summary, resolved_link) in zip(items, summaries):
+        item["summary"] = summary
         if resolved_link.startswith("https://") and "news.google.com" not in urllib.parse.urlparse(resolved_link).netloc:
             item["link"] = resolved_link
-        items.append(item)
     return items
 
 
