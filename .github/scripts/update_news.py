@@ -17,8 +17,8 @@ PAGE = ROOT / "index.html"
 KST = timezone(timedelta(hours=9))
 RSS_LOCALE = {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}
 CATEGORIES = {
-    "world": ("세계 주요 뉴스", "세계 국제 정세 지정학 글로벌 뉴스"),
-    "us": ("미국 경제 금융 시장 뉴스", "미국 경제 금융 시장 연준 주식"),
+    "world": ("세계 주요 뉴스", "world news geopolitics"),
+    "us": ("미국 경제 금융 시장 뉴스", "United States economy finance markets Federal Reserve stock market"),
     "korea": ("한국 경제 증시 뉴스", "한국 경제 증시 코스피 금융 시장"),
     "crypto": ("암호화폐 비트코인 이더리움 뉴스", "암호화폐 비트코인 이더리움 가상자산"),
 }
