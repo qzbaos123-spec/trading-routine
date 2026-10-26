@@ -165,17 +165,9 @@ def extract_source_body(html_text):
                 return body
         except (ValueError, TypeError):
             continue
+    # Never summarize generic page paragraphs: they may be recommendations or ads.
+    # Only structured articleBody or paragraphs inside semantic article/main tags count.
     paragraphs = [p for p in parser.paragraphs if len(p) >= 45]
-    if len(" ".join(paragraphs[:8])) < 100:
-        # Some publishers omit semantic <article>/<main> wrappers. Use substantial
-        # paragraph text as a fallback, filtering common navigation boilerplate.
-        boilerplate = ("subscribe", "sign up", "advertisement", "privacy policy",
-                       "cookie policy", "all rights reserved", "read more", "관련기사",
-                       "개인정보처리방침", "구독 신청")
-        paragraphs = [
-            p for p in parser.all_paragraphs
-            if len(p) >= 60 and not any(term in p.lower() for term in boilerplate)
-        ]
     body = " ".join(paragraphs[:8]).strip()
     return body if len(body) >= 100 else ""
 
@@ -183,7 +175,7 @@ def extract_source_body(html_text):
 def summarize_verified_body(body):
     """Return up to two lead sentences actually present in the source article."""
     normalized = " ".join(body.split())
-    sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9“\"'])", normalized)
+    sentences = re.split(r"(?<=[.!?。！？])\s+", normalized)
     selected = [sentence.strip() for sentence in sentences if len(sentence.strip()) >= 25][:2]
     if not selected:
         return ""
