@@ -474,6 +474,9 @@ def _keyword_matches(title, keyword):
 def is_relevant_title(category, title):
     """Reject general-interest stories unless their headline signals market relevance."""
     normalized = re.sub(r"\s+", " ", title.lower()).strip()
+    normalized = normalized.rsplit(" - ", 1)[0]
+    if re.match(r"^\s*[\[〈<【](인사|부고|표|동정|알림)[\]〉>】]", normalized):
+        return False
     irrelevant = [
         "celebrity", "celebrities", "movie review", "film review", "box office",
         "music festival", "reality show", "football match", "soccer match",
@@ -642,7 +645,9 @@ def fetch_items(category, queries, now):
                 else:
                     in_window += 1
                     reason = ""
-                    if not is_relevant_title(category, title):
+                    if re.match(r"^\s*[\[〈<【](인사|부고|표|동정|알림)[\]〉>】]", title):
+                        reason = "인사·부고·단순 표·동정·알림"
+                    elif not is_relevant_title(category, title):
                         reason = "분야별 경제·금융·기업·정책 관련성 부족 또는 제외 키워드"
                 if reason:
                     print(f"[{category}] 기사 제외 | 출처={source} | 제목={title[:160]} | 사유={reason}")
@@ -651,12 +656,20 @@ def fetch_items(category, queries, now):
                     if title and len(excluded_examples[reason]) < 2:
                         excluded_examples[reason].append(title[:100])
                     continue
+                title_key = re.sub(r"[^a-z0-9가-힣]", "", title.lower().rsplit(" - ", 1)[0])
+                duplicate_title = any(
+                    difflib.SequenceMatcher(None, title_key, item["title_key"]).ratio() > 0.90
+                    for item in by_link.values()
+                )
+                if duplicate_title and link not in by_link:
+                    print(f"[{category}] 중복 제외 | 출처={source} | 제목={title[:160]} | 사유=동일·유사 제목")
+                    continue
                 passed += 1
                 if link in by_link:
                     print(f"[{category}] 중복 제외 | 출처={source} | 제목={title[:160]} | 사유=동일 링크")
                 if link not in by_link:
                     by_link[link] = {
-                        "original_title": title, "link": link, "source": source,
+                        "original_title": title, "title_key": title_key, "link": link, "source": source,
                         "published": published.astimezone(KST), "published_utc": published,
                     }
             why = ", ".join("{} {}건 (예: {})".format(reason, count, "; ".join(excluded_examples.get(reason, []))) for reason, count in excluded.items()) or "없음"
