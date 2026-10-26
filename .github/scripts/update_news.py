@@ -14,18 +14,20 @@ ROOT = Path(__file__).resolve().parents[2]
 PAGE = ROOT / "index.html"
 KST = timezone(timedelta(hours=9))
 CATEGORIES = {
-    "world": ('세계 주요 뉴스', 'world news'),
-    "us": ('미국 경제 금융 시장 뉴스', 'US economy finance markets'),
-    "korea": ('한국 경제 증시 뉴스', 'South Korea economy stock market'),
-    "crypto": ('암호화폐 비트코인 이더리움 뉴스', 'cryptocurrency Bitcoin Ethereum'),
+    "world": ('세계 주요 뉴스', 'world news geopolitics', 'en', 'US', 'US:en'),
+    "us": ('미국 경제 금융 시장 뉴스', 'United States economy finance markets Federal Reserve stock market', 'en', 'US', 'US:en'),
+    "korea": ('한국 경제 증시 뉴스', '한국 경제 증시 코스피 금융 시장', 'ko', 'KR', 'KR:ko'),
+    "crypto": ('암호화폐 비트코인 이더리움 뉴스', '암호화폐 비트코인 이더리움 가상자산', 'ko', 'KR', 'KR:ko'),
 }
 MAX_ITEMS = 5
 
 
-def fetch_items(query, start_date, end_date):
-    q = f'{query} after:{start_date.isoformat()} before:{end_date.isoformat()}'
+def fetch_items(query, start_date, end_date, hl, gl, ceid):
+    # Google News date operators can return empty feeds for valid categories.
+    # Request a wider recent window, then enforce the exact KST calendar date below.
+    q = f'{query} when:2d'
     url = 'https://news.google.com/rss/search?' + urllib.parse.urlencode({
-        'q': q, 'hl': 'ko', 'gl': 'KR', 'ceid': 'KR:ko'
+        'q': q, 'hl': hl, 'gl': gl, 'ceid': ceid
     })
     request = urllib.request.Request(url, headers={'User-Agent': 'trading-routine-news-bot/1.0'})
     with urllib.request.urlopen(request, timeout=25) as response:
@@ -127,18 +129,18 @@ def main():
     today = now.date()
     try:
         collected = {}
-        for category, (label, query) in CATEGORIES.items():
+        for category, (label, query, hl, gl, ceid) in CATEGORIES.items():
             print(f'Collecting {label}: {yesterday} KST')
-            collected[category] = fetch_items(query, yesterday, today)
+            collected[category] = fetch_items(query, yesterday, today, hl, gl, ceid)
         update_page(True, 'success', collected)
         print('News refreshed successfully.')
     except Exception as exc:
         message = f'자동 수집 실패: {str(exc)[:180]}'
         print(message, file=sys.stderr)
         update_page(False, message)
-        # Keep the workflow green after recording the visible delay state.
-        # The old news stays in place, so users never see a half-updated page.
-        return 0
+        # The workflow captures this failure, commits the visible delay banner,
+        # then reports a failed conclusion after publishing the status.
+        return 1
     return 0
 
 
