@@ -543,9 +543,9 @@ def parse_feed_date(node):
     return None
 
 
-def fetch_items(category, queries, start_date, end_date):
+def fetch_items(category, queries, now):
     """Search the last day first; extend to three days if the category is sparse."""
-    now_utc = datetime.now(timezone.utc)
+    now_utc = now.astimezone(timezone.utc)
     feeds = [("Google News", query, "") for query in queries]
     if category == "korea":
         feeds += [("주요 매체 검색", query, "") for query in KOREA_MEDIA_QUERIES]
