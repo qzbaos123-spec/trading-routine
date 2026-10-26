@@ -18,7 +18,7 @@ KST = timezone(timedelta(hours=9))
 RSS_LOCALE = {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}
 CATEGORIES = {
     "world": ("세계 주요 뉴스", "세계"),
-    "us": ("미국 경제 금융 시장 뉴스", "미국 경제"),
+    "us": ("미국 경제 금융 시장 뉴스", "미국"),
     "korea": ("한국 경제 증시 뉴스", "한국 경제"),
     "crypto": ("암호화폐 비트코인 이더리움 뉴스", "비트코인"),
 }
