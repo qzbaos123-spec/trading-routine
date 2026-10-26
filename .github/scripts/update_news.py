@@ -680,7 +680,7 @@ def update_page(success, message, collected=None):
     status_class = "rt-news-status is-ok" if success else "rt-news-status is-delayed"
     if success:
         status = (f'<div id="rt-news-status" class="{status_class}" role="status" aria-live="polite">'
-                  f'<strong>정상 갱신</strong><span>전날 뉴스 · {now:%Y.%m.%d %H:%M} KST 기준</span></div>')
+                  f'<strong>정상 갱신</strong><span>최근 24시간 우선 · 부족 시 72시간까지 확장 · {now:%Y.%m.%d %H:%M} KST 기준</span></div>')
         for category, items in collected.items():
             pattern = rf'<div class="rt-news-panel" id="rt-panel-{category}"[^>]*>.*?</div>'
             inner, count = re.subn(
@@ -691,7 +691,7 @@ def update_page(success, message, collected=None):
                 raise RuntimeError(f"뉴스 패널을 찾을 수 없습니다: {category}")
         date_pattern = r'<small class="rt-news-date">.*?</small>'
         news_day = now.date() - timedelta(days=1)
-        date_label = (f'<small class="rt-news-date">{news_day:%Y.%m.%d} 뉴스 · '
+        date_label = (f'<small class="rt-news-date">최근 72시간 이내 뉴스 · '
                       f'{now:%Y.%m.%d %H:%M} KST 갱신 · 문장을 누르면 출처 확인</small>')
         inner, count = re.subn(date_pattern, lambda _: date_label, inner, count=1, flags=re.DOTALL)
         if count != 1:
