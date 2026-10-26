@@ -62,22 +62,26 @@ CATEGORIES = {
     "korea": (
         "한국 경제·금융·기업 뉴스",
         [
-            "한국 경제 증시 코스피 코스닥 환율 금리 물가 수출",
-            "한국은행 기준금리 금융정책 국채 채권 기업 실적",
-            "삼성전자 SK하이닉스 현대차 LG에너지솔루션 실적 수출 투자",
-            '"Korea economy" OR KOSPI OR "Bank of Korea" OR "Korean won" OR exports',
+            "한국 경제 증시 코스피 코스닥 주가 상승 하락 외국인 기관 매수 매도",
+            "한국은행 기준금리 원달러 환율 국고채 채권 금리 금융정책",
+            "삼성전자 SK하이닉스 반도체 수출 기업 실적 공시 투자",
+            '"Korea economy" OR KOSPI OR KOSDAQ OR "Bank of Korea" OR "Korean won" OR exports',
+            "국내 증시 증권시장 금융시장 ETF IPO 배당 실적 전망",
+            "한국 기업 실적 수출 산업정책 금융위원회 금융감독원",
         ],
         [
             "korea economy", "korean economy", "kospi", "kosdaq", "bank of korea",
             "korean won", "korea exports", "korean exports", "korea inflation",
             "korean stocks", "korea stocks", "samsung", "sk hynix", "hyundai motor",
             "lg energy", "naver", "kakao", "posco", "corporate earnings", "interest rate",
-            "한국 경제", "한국 증시", "코스피", "코스닥", "한국은행", "원화", "환율",
-            "수출", "수입", "무역수지", "물가", "기준금리", "금융정책", "국채",
-            "기업 실적", "삼성전자", "하이닉스", "현대차", "네이버", "카카오",
-            "반도체", "배터리", "주가", "증시", "투자", "금융위원회", "금융감독원",
-            "재정경제부", "중소벤처기업부", "산업부", "정부 정책", "정부 대책", "규제",
-            "세제", "세금", "공급망", "기업 투자", "산업정책", "경제정책", "가계대출",
+            "한국 경제", "한국 증시", "국내 증시", "증권시장", "금융시장", "코스피", "코스닥",
+            "한국은행", "원화", "환율", "원달러", "원·달러", "수출", "수입", "무역수지",
+            "물가", "기준금리", "금융정책", "국채", "국고채", "채권", "금리", "기업 실적",
+            "삼성전자", "하이닉스", "현대차", "네이버", "카카오", "반도체", "배터리",
+            "주가", "증시", "증권", "주식", "상승", "하락", "급등", "급락", "매수", "매도",
+            "외국인", "기관", "선물", "ETF", "IPO", "배당", "공시", "투자", "금융위원회",
+            "금융감독원", "재정경제부", "중소벤처기업부", "산업부", "정부 정책", "정부 대책",
+            "규제", "세제", "세금", "공급망", "기업 투자", "산업정책", "경제정책", "가계대출",
         ],
     ),
     "crypto": (
@@ -640,17 +644,23 @@ def fetch_items(category, queries, now):
     if successful == 0:
         raise RuntimeError(f"{category} RSS 검색이 모두 실패했습니다.")
 
-    items = sorted(by_link.values(), key=lambda item: item["published_utc"], reverse=True)[:MAX_ITEMS]
+    # Translate titles before selecting the final three. If a foreign headline cannot
+    # be translated reliably, skip it and try the next verified market-relevant story.
+    ranked_items = sorted(by_link.values(), key=lambda item: item["published_utc"], reverse=True)
+    items = []
+    for item in ranked_items:
+        try:
+            item["title"] = translate_title_to_korean(item["original_title"])
+        except Exception as exc:
+            print(f"[{category}] 제목 번역 실패로 기사 제외 | {item['source']} | {str(exc)[:100]}")
+            continue
+        items.append(item)
+        if len(items) >= MAX_ITEMS:
+            break
     source_counts = {}
     for item in items:
         source_counts[item["source"]] = source_counts.get(item["source"], 0) + 1
     print(f"[{category}] 최종 후보 출처별 건수=" + (", ".join(f"{name}:{count}" for name, count in source_counts.items()) or "없음"))
-    for item in items:
-        try:
-            item["title"] = translate_title_to_korean(item["original_title"])
-        except Exception as exc:
-            item["title"] = item["original_title"]
-            print(f"[{category}] 제목 번역 실패 | {item['source']} | {str(exc)[:100]}")
     with ThreadPoolExecutor(max_workers=4) as pool:
         summaries = list(pool.map(lambda item: fetch_article_summary(item["link"], item["original_title"], item["source"]), items))
     for item, (summary, resolved_link) in zip(items, summaries):
