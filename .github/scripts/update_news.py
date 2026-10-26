@@ -363,6 +363,9 @@ def extract_source_body(html_text, expected_title="", source=""):
 def summarize_verified_body(body):
     """Return up to two lead sentences actually present in the source article."""
     normalized = " ".join(body.split())
+    attachment_hits = len(re.findall(r"(?:\.pdf\b|\.hwpx\b|\.hwp\b|바로보기|내려받기|첨부파일)", normalized, re.I))
+    if attachment_hits >= 2 and len(normalized) < 600:
+        return ""
     sentences = re.split(r"(?<=[.!?。！？])\s+", normalized)
     selected = [sentence.strip() for sentence in sentences if len(sentence.strip()) >= 25][:2]
     if not selected:
