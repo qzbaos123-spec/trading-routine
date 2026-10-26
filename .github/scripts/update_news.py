@@ -6,6 +6,7 @@ from html import escape, unescape
 from pathlib import Path
 import json
 import re
+import difflib
 from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 import sys
@@ -94,9 +95,17 @@ class ArticleTextParser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.content_depth = 0
+        self.article_depth = 0
+        self.main_depth = 0
+        self.headline_depth = 0
+        self.headline_parts = []
+        self.headlines = []
+        self.seen_h1 = False
         self.paragraph_depth = 0
         self.paragraph_parts = []
         self.paragraphs = []
+        self.article_paragraphs = []
+        self.main_paragraphs_after_h1 = []
         self.all_paragraphs = []
         self.jsonld_active = False
         self.jsonld_parts = []
@@ -106,6 +115,14 @@ class ArticleTextParser(HTMLParser):
         attrs = dict(attrs)
         if tag in ("article", "main"):
             self.content_depth += 1
+        if tag == "article":
+            self.article_depth += 1
+        if tag == "main":
+            self.main_depth += 1
+        if tag == "h1":
+            if self.headline_depth == 0:
+                self.headline_parts = []
+            self.headline_depth += 1
         if tag == "p":
             if self.paragraph_depth == 0:
                 self.paragraph_parts = []
@@ -123,7 +140,23 @@ class ArticleTextParser(HTMLParser):
                     self.all_paragraphs.append(paragraph)
                     if self.content_depth > 0:
                         self.paragraphs.append(paragraph)
+                    if self.article_depth > 0:
+                        self.article_paragraphs.append(paragraph)
+                    if self.main_depth > 0 and self.seen_h1:
+                        self.main_paragraphs_after_h1.append(paragraph)
                 self.paragraph_parts = []
+        if tag == "h1" and self.headline_depth > 0:
+            self.headline_depth -= 1
+            if self.headline_depth == 0:
+                headline = " ".join(" ".join(self.headline_parts).split())
+                if headline:
+                    self.headlines.append(headline)
+                self.headline_parts = []
+                self.seen_h1 = True
+        if tag == "article" and self.article_depth > 0:
+            self.article_depth -= 1
+        if tag == "main" and self.main_depth > 0:
+            self.main_depth -= 1
         if tag in ("article", "main") and self.content_depth > 0:
             self.content_depth -= 1
         if tag == "script" and self.jsonld_active:
@@ -134,6 +167,8 @@ class ArticleTextParser(HTMLParser):
     def handle_data(self, data):
         if self.jsonld_active:
             self.jsonld_parts.append(data)
+        elif self.headline_depth > 0:
+            self.headline_parts.append(data)
         elif self.paragraph_depth > 0:
             self.paragraph_parts.append(data)
 
@@ -155,7 +190,27 @@ def find_article_body(value):
     return ""
 
 
-def extract_source_body(html_text):
+def headline_matches(expected_title, source, candidates):
+    expected = expected_title.strip()
+    suffix = " - " + (source or "")
+    if suffix.strip() and expected.endswith(suffix):
+        expected = expected[:-len(suffix)]
+    tokens = lambda value: set(re.findall(r"[A-Za-z0-9가-힣]+", value.lower()))
+    expected_tokens = tokens(expected)
+    if not expected_tokens:
+        return False
+    for headline in candidates:
+        headline_tokens = tokens(headline)
+        if not headline_tokens:
+            continue
+        overlap = len(expected_tokens & headline_tokens) / max(1, min(len(expected_tokens), len(headline_tokens)))
+        similarity = difflib.SequenceMatcher(None, expected.lower(), headline.lower()).ratio()
+        if overlap >= 0.35 or similarity >= 0.45:
+            return True
+    return False
+
+
+def extract_source_body(html_text, expected_title="", source=""):
     parser = ArticleTextParser()
     parser.feed(html_text)
     for block in parser.jsonld_blocks:
@@ -165,11 +220,21 @@ def extract_source_body(html_text):
                 return body
         except (ValueError, TypeError):
             continue
-    # Never summarize generic page paragraphs: they may be recommendations or ads.
-    # Only structured articleBody or paragraphs inside semantic article/main tags count.
-    paragraphs = [p for p in parser.paragraphs if len(p) >= 45]
-    body = " ".join(paragraphs[:8]).strip()
-    return body if len(body) >= 100 else ""
+    # Prefer paragraphs in the actual <article>; otherwise require paragraphs
+    # after a matching H1 within <main>. This prevents related-story teasers
+    # from being mistaken for the current article.
+    article_paragraphs = [p for p in parser.article_paragraphs if len(p) >= 45]
+    if len(" ".join(article_paragraphs[:8])) >= 100:
+        body = " ".join(article_paragraphs[:8]).strip()
+        if parser.headlines and expected_title and not headline_matches(expected_title, source, parser.headlines):
+            return ""
+        return body
+    main_paragraphs = [p for p in parser.main_paragraphs_after_h1 if len(p) >= 45]
+    if parser.headlines and expected_title and headline_matches(expected_title, source, parser.headlines):
+        body = " ".join(main_paragraphs[:8]).strip()
+        if len(body) >= 100:
+            return body
+    return ""
 
 
 def summarize_verified_body(body):
@@ -226,7 +291,7 @@ def resolve_google_news_url(link):
         print(f"Google News URL unresolved ({link}): {str(exc)[:100]}")
     return link
 
-def fetch_article_summary(link):
+def fetch_article_summary(link, expected_title="", source=""):
     """Resolve and read the publisher page; never infer unavailable content."""
     resolved_link = resolve_google_news_url(link)
     if "news.google.com" in urllib.parse.urlparse(resolved_link).netloc:
@@ -244,7 +309,7 @@ def fetch_article_summary(link):
             raw = response.read(2_000_000)
             charset = response.headers.get_content_charset() or "utf-8"
             html_text = raw.decode(charset, errors="replace")
-        body = extract_source_body(html_text)
+        body = extract_source_body(html_text, expected_title, source)
         if not body:
             parser = ArticleTextParser()
             parser.feed(html_text)
@@ -298,11 +363,14 @@ def fetch_items(queries, start_date, end_date):
         raise RuntimeError("전날 뉴스가 없습니다: " + " / ".join(queries))
     items = []
     for item in raw_items:
-        item["title"] = translate_title_to_korean(item.pop("original_title"))
+        item["title"] = translate_title_to_korean(item["original_title"])
         items.append(item)
     # Resolve/read article pages concurrently to keep the scheduled workflow bounded.
     with ThreadPoolExecutor(max_workers=4) as pool:
-        summaries = list(pool.map(lambda item: fetch_article_summary(item["link"]), items))
+        summaries = list(pool.map(
+            lambda item: fetch_article_summary(item["link"], item["original_title"], item["source"]),
+            items
+        ))
     for item, (summary, resolved_link) in zip(items, summaries):
         item["summary"] = summary
         if resolved_link.startswith("https://") and "news.google.com" not in urllib.parse.urlparse(resolved_link).netloc:
