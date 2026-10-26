@@ -483,6 +483,8 @@ def is_relevant_title(category, title):
         "레시피", "운세", "패션쇼", "결혼식", "학교 급식", "날씨 예보",
         "교통사고", "살인 사건", "생활 꿀팁", "주식 분석", "기술적 분석",
         "자율 투자 실험", "클로드, s&p 500을 이겨줘",
+        "교육청", "학교", "학생", "인재 연간", "인재 양성", "교육 과정",
+        "장관상 수상", "대회 개최", "축제 개최", "채용 박람회",
     ]
     if any(_keyword_matches(normalized, word) for word in irrelevant):
         return False
@@ -493,7 +495,8 @@ def is_relevant_title(category, title):
         korea_local = [
             "한국은행", "한은", "코스피", "코스닥", "한국 경제", "국내총생산",
             "국내 증시", "국내 기업", "한국 수출", "원화", "삼성전자", "sk하이닉스",
-            "인구 고령화", "재정 지출", "gdp 대비",
+            "인구 고령화", "재정 지출", "gdp 대비", "국고채", "국내 채권",
+            "국채 선물", "외인 선물", "외국인 선물", "원달러", "원·달러",
             "korea gdp", "korean economy", "kospi", "kosdaq", "bank of korea",
         ]
         global_context = [
@@ -516,6 +519,21 @@ def is_relevant_title(category, title):
             "netflix", "exxon", "coinbase", "eli lilly", "caterpillar",
         ]
         if not any(_keyword_matches(normalized, word) for word in us_anchors):
+            return False
+        # A US index mentioned in a Korea-focused personal-finance story is not
+        # automatically a US-market article. Require an explicit US context when
+        # domestic Korean institutions or markets dominate the headline.
+        korea_focus = [
+            "국민연금", "코스피", "코스닥", "국내 증시", "국내 주식", "한국 증시",
+            "삼성전자", "sk하이닉스", "한국 기업", "국내 기업", "원화",
+        ]
+        explicit_us_context = [
+            "미국", "뉴욕증시", "연준", "fomc", "미 국채", "미국 경제",
+            "미국 물가", "미국 고용", "월스트리트", "federal reserve",
+            "treasury", "wall street", "us economy", "u.s. economy",
+        ]
+        if (any(_keyword_matches(normalized, word) for word in korea_focus)
+                and not any(_keyword_matches(normalized, word) for word in explicit_us_context)):
             return False
 
     if category == "korea":
