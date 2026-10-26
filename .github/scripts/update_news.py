@@ -104,6 +104,17 @@ def update_page(success, message, collected=None):
         if anchor not in inner:
             raise RuntimeError('뉴스 탭 위치를 찾을 수 없습니다.')
         inner = inner.replace(anchor, status + '\n    ' + anchor, 1)
+    css = """
+    .rt-news-status { display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; margin:0 0 12px; padding:10px 12px; border:1px solid var(--rt-border, #64748b); border-radius:10px; font-size:12px; }
+    .rt-news-status strong { font-size:12px; }
+    .rt-news-status span, .rt-news-status small { color:var(--rt-muted, #64748b); }
+    .rt-news-status.is-ok { border-color:#16803d; }
+    .rt-news-status.is-ok strong { color:#16803d; }
+    .rt-news-status.is-delayed { border-color:#b45309; background:color-mix(in srgb, #f59e0b 9%, transparent); }
+    .rt-news-status.is-delayed strong { color:#b45309; }
+    """
+    if ".rt-news-status {" not in inner:
+        inner = inner.replace("</style>", css + "\\n</style>", 1)
     escaped_inner = escape(inner, quote=True)
     source = source[:match.start(1)] + escaped_inner + source[match.end(1):]
     PAGE.write_text(source, encoding='utf-8')
