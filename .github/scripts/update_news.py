@@ -17,10 +17,10 @@ PAGE = ROOT / "index.html"
 KST = timezone(timedelta(hours=9))
 RSS_LOCALE = {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}
 CATEGORIES = {
-    "world": ("세계 주요 뉴스", "세계"),
-    "us": ("미국 경제 금융 시장 뉴스", "미국"),
-    "korea": ("한국 경제 증시 뉴스", "한국 경제"),
-    "crypto": ("암호화폐 비트코인 이더리움 뉴스", "비트코인"),
+    "world": ("세계 주요 뉴스", ["세계", "국제 뉴스", "글로벌 뉴스"]),
+    "us": ("미국 경제 금융 시장 뉴스", ["미국", "미국 경제", "미국 주식"]),
+    "korea": ("한국 경제 증시 뉴스", ["한국 경제", "코스피", "한국 증시"]),
+    "crypto": ("암호화폐 비트코인 이더리움 뉴스", ["비트코인", "가상자산", "이더리움"]),
 }
 MAX_ITEMS = 5
 _TRANSLATION_CACHE = {}
@@ -60,45 +60,45 @@ def translate_title_to_korean(title):
     raise RuntimeError(f"영문 제목 한국어 번역 실패: {str(last_error)[:120]}")
 
 
-def fetch_items(query, start_date, end_date):
-    # Use the Korean Google News edition for all four categories, then enforce
-    # the exact previous KST calendar day independently of RSS query matching.
-    q = query
-    url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({
-        "q": q, **RSS_LOCALE
-    })
-    request = urllib.request.Request(
-        url, headers={"User-Agent": "trading-routine-news-bot/1.0"}
-    )
-    with urllib.request.urlopen(request, timeout=25) as response:
-        payload = response.read()
-    root = ET.fromstring(payload)
-    items = []
-    for node in root.findall("./channel/item"):
-        original_title = (node.findtext("title") or "").strip()
-        link = (node.findtext("link") or "").strip()
-        published = (node.findtext("pubDate") or "").strip()
-        source_node = node.find("source")
-        source = (source_node.text or "").strip() if source_node is not None else ""
-        if not original_title or not link or not link.startswith("https://"):
-            continue
-        try:
-            published_at = parsedate_to_datetime(published).astimezone(KST)
-            if not (start_date <= published_at.date() < end_date):
-                continue
-        except (TypeError, ValueError, OverflowError):
-            continue
-
-        title = translate_title_to_korean(original_title)
-        items.append({
-            "title": title, "link": link, "source": source, "published": published_at
+def fetch_items(queries, start_date, end_date):
+    """Combine several Korean-locale searches to avoid sparse category feeds."""
+    by_link = {}
+    for query in queries:
+        url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({
+            "q": query, **RSS_LOCALE
         })
-        if len(items) >= MAX_ITEMS:
-            break
-    if len(items) < 3:
-        raise RuntimeError(f"{query}: 전날 뉴스가 3건 미만입니다 ({len(items)}건)")
-    return items
+        request = urllib.request.Request(
+            url, headers={"User-Agent": "trading-routine-news-bot/1.0"}
+        )
+        with urllib.request.urlopen(request, timeout=25) as response:
+            payload = response.read()
+        root = ET.fromstring(payload)
+        for node in root.findall("./channel/item"):
+            original_title = (node.findtext("title") or "").strip()
+            link = (node.findtext("link") or "").strip()
+            published = (node.findtext("pubDate") or "").strip()
+            source_node = node.find("source")
+            source = (source_node.text or "").strip() if source_node is not None else ""
+            if not original_title or not link or not link.startswith("https://") or link in by_link:
+                continue
+            try:
+                published_at = parsedate_to_datetime(published).astimezone(KST)
+                if not (start_date <= published_at.date() < end_date):
+                    continue
+            except (TypeError, ValueError, OverflowError):
+                continue
+            by_link[link] = {"original_title": original_title, "link": link,
+                             "source": source, "published": published_at}
 
+    # Select the most recent matching articles, then translate only displayed titles.
+    raw_items = sorted(by_link.values(), key=lambda item: item["published"], reverse=True)[:MAX_ITEMS]
+    if not raw_items:
+        raise RuntimeError("전날 뉴스가 없습니다: " + " / ".join(queries))
+    items = []
+    for item in raw_items:
+        item["title"] = translate_title_to_korean(item.pop("original_title"))
+        items.append(item)
+    return items
 
 def render_panel(category, items):
     lis = []
@@ -177,9 +177,9 @@ def main():
     today = now.date()
     try:
         collected = {}
-        for category, (label, query) in CATEGORIES.items():
+        for category, (label, queries) in CATEGORIES.items():
             print(f"Collecting {label}: {yesterday} KST (hl=ko, gl=KR, ceid=KR:ko)")
-            collected[category] = fetch_items(query, yesterday, today)
+            collected[category] = fetch_items(queries, yesterday, today)
         update_page(True, "success", collected)
         print("News refreshed successfully.")
     except Exception as exc:
