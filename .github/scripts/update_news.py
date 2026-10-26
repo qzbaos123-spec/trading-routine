@@ -445,10 +445,13 @@ def is_relevant_title(category, title):
         "basketball game", "sports results", "recipe", "restaurant review",
         "travel guide", "horoscope", "fashion week", "wedding", "school lunch",
         "crime scene", "murder investigation", "weather forecast", "traffic accident",
+        "stock analysis", "technical analysis", "investment experiment",
+        "autonomous investing experiment", "beat the s&p 500",
         "연예인", "연예계", "드라마", "영화 리뷰", "박스오피스", "음악 축제",
         "축구 경기", "야구 경기", "농구 경기", "스포츠 경기", "맛집", "여행지",
         "레시피", "운세", "패션쇼", "결혼식", "학교 급식", "날씨 예보",
-        "교통사고", "살인 사건", "생활 꿀팁",
+        "교통사고", "살인 사건", "생활 꿀팁", "주식 분석", "기술적 분석",
+        "자율 투자 실험", "클로드, s&p 500을 이겨줘",
     ]
     if any(_keyword_matches(normalized, word) for word in irrelevant):
         return False
@@ -459,6 +462,7 @@ def is_relevant_title(category, title):
         korea_local = [
             "한국은행", "한은", "코스피", "코스닥", "한국 경제", "국내총생산",
             "국내 증시", "국내 기업", "한국 수출", "원화", "삼성전자", "sk하이닉스",
+            "인구 고령화", "재정 지출", "gdp 대비",
             "korea gdp", "korean economy", "kospi", "kosdaq", "bank of korea",
         ]
         global_context = [
