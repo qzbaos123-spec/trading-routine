@@ -452,6 +452,51 @@ def is_relevant_title(category, title):
     ]
     if any(_keyword_matches(normalized, word) for word in irrelevant):
         return False
+
+    # Keep region panels distinct even when the same broad RSS query returns
+    # another country's macro or corporate story.
+    if category == "world":
+        korea_local = [
+            "한국은행", "한은", "코스피", "코스닥", "한국 경제", "국내총생산",
+            "국내 증시", "국내 기업", "한국 수출", "원화", "삼성전자", "sk하이닉스",
+            "korea gdp", "korean economy", "kospi", "kosdaq", "bank of korea",
+        ]
+        global_context = [
+            "세계", "글로벌", "국제", "미국", "유럽", "중국", "일본", "인도",
+            "연준", "ecb", "imf", "world", "global", "international", "united states",
+            "europe", "china", "japan", "india", "federal reserve", "bank of england",
+            "oil prices", "crude oil", "dollar", "global markets",
+        ]
+        if (any(_keyword_matches(normalized, word) for word in korea_local)
+                and not any(_keyword_matches(normalized, word) for word in global_context)):
+            return False
+
+    if category == "us":
+        us_anchors = [
+            "미국", "뉴욕증시", "연준", "fomc", "미 국채", "달러", "wall street",
+            "federal reserve", "s&p 500", "nasdaq", "dow jones", "treasury",
+            "us economy", "u.s. economy", "american economy", "us stocks",
+            "apple", "microsoft", "alphabet", "google", "amazon", "meta",
+            "nvidia", "tesla", "walmart", "jpmorgan", "boeing", "intel",
+            "netflix", "exxon", "coinbase", "eli lilly", "caterpillar",
+        ]
+        if not any(_keyword_matches(normalized, word) for word in us_anchors):
+            return False
+
+    if category == "korea":
+        crypto_terms = [
+            "bitcoin", "btc", "ethereum", "crypto", "cryptocurrency", "binance",
+            "cryptorank", "xrp", "solana", "비트코인", "이더리움", "가상자산",
+            "암호화폐", "코인", "토큰", "블록체인",
+        ]
+        korea_policy_context = [
+            "금융위원회", "금융감독원", "한국 금융당국", "국내 가상자산",
+            "가상자산 규제", "가상자산법", "국내 거래소", "한국 규제",
+        ]
+        if (any(_keyword_matches(normalized, word) for word in crypto_terms)
+                and not any(_keyword_matches(normalized, word) for word in korea_policy_context)):
+            return False
+
     keywords = CATEGORIES[category][2]
     return any(_keyword_matches(normalized, keyword) for keyword in keywords)
 
@@ -539,6 +584,11 @@ def render_panel(category, items):
             '관련성 기준을 충족하는 경제·금융·기업·시장 정책 기사가 부족합니다. '
             '확인되지 않은 기사로 채우지 않았습니다.</li>'
         )
+    elif len(items) < MAX_ITEMS:
+        lis.append(
+            f'<li class="rt-news-shortage" role="status">관련성 기준을 충족하는 기사는 '
+            f'{len(items)}건뿐입니다. 부족한 수를 무관한 기사로 채우지 않았습니다.</li>'
+        )
     hidden = "" if category == "world" else " hidden"
     return (f'<div class="rt-news-panel" id="rt-panel-{category}" role="tabpanel" '
             f'aria-labelledby="rt-tab-{category}"{hidden}>'
@@ -602,6 +652,7 @@ def update_page(success, message, collected=None):
     #trading-routine-dashboard .rt-news-meta a { color:var(--rt-green); text-decoration:underline; }
     #trading-routine-dashboard .rt-news-summary { margin:0; color:var(--rt-text); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
     #trading-routine-dashboard .rt-news-empty { padding:14px 8px; color:var(--rt-muted); font-size:12px; line-height:1.6; list-style:none; }
+    #trading-routine-dashboard .rt-news-shortage { padding:10px 8px; color:var(--rt-muted); font-size:11px; line-height:1.5; list-style:none; border-top:1px dashed var(--rt-border); }
     """
         inner = inner.replace("</style>", news_css + "\n</style>", 1)
     escaped_inner = escape(inner, quote=True)
