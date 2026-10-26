@@ -6,6 +6,7 @@ from html import escape, unescape
 from pathlib import Path
 import json
 import re
+from html.parser import HTMLParser
 import sys
 import time
 import urllib.parse
@@ -43,7 +44,7 @@ def translate_title_to_korean(title):
             request = urllib.request.Request(
                 url, headers={"User-Agent": "Mozilla/5.0 trading-routine-news-bot/1.0"}
             )
-            with urllib.request.urlopen(request, timeout=15) as response:
+            with urllib.request.urlopen(request, timeout=8) as response:
                 translated_data = json.loads(response.read().decode("utf-8"))
             translated = "".join(
                 part[0] for part in translated_data[0]
@@ -58,6 +59,149 @@ def translate_title_to_korean(title):
             if attempt == 0:
                 time.sleep(1)
     raise RuntimeError(f"영문 제목 한국어 번역 실패: {str(last_error)[:120]}")
+
+
+
+def translate_text_to_korean(text):
+    """Translate verified source text to Korean; do not invent or expand it."""
+    if not text.strip():
+        return ""
+    # Avoid unnecessary external translation calls for text already in Korean.
+    hangul = len(HANGUL_RE.findall(text))
+    letters = sum(1 for char in text if char.isalpha())
+    if hangul and letters and hangul / letters > 0.15:
+        return text.strip()
+    url = "https://translate.googleapis.com/translate_a/single?" + urllib.parse.urlencode({
+        "client": "gtx", "sl": "auto", "tl": "ko", "dt": "t", "q": text
+    })
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "Mozilla/5.0 trading-routine-news-bot/1.0"}
+    )
+    with urllib.request.urlopen(request, timeout=8) as response:
+        translated_data = json.loads(response.read().decode("utf-8"))
+    translated = "".join(
+        part[0] for part in translated_data[0]
+        if isinstance(part, list) and part and isinstance(part[0], str)
+    ).strip()
+    if not translated or not HANGUL_RE.search(translated):
+        raise RuntimeError("한국어 번역 결과를 확인할 수 없습니다.")
+    return translated
+
+
+class ArticleTextParser(HTMLParser):
+    """Extract only paragraphs inside article/main and JSON-LD articleBody."""
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.content_depth = 0
+        self.paragraph_depth = 0
+        self.paragraph_parts = []
+        self.paragraphs = []
+        self.jsonld_active = False
+        self.jsonld_parts = []
+        self.jsonld_blocks = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag in ("article", "main"):
+            self.content_depth += 1
+        if tag == "p" and self.content_depth > 0:
+            if self.paragraph_depth == 0:
+                self.paragraph_parts = []
+            self.paragraph_depth += 1
+        if tag == "script" and "ld+json" in attrs.get("type", "").lower():
+            self.jsonld_active = True
+            self.jsonld_parts = []
+
+    def handle_endtag(self, tag):
+        if tag == "p" and self.paragraph_depth > 0:
+            self.paragraph_depth -= 1
+            if self.paragraph_depth == 0:
+                paragraph = " ".join(" ".join(self.paragraph_parts).split())
+                if paragraph:
+                    self.paragraphs.append(paragraph)
+                self.paragraph_parts = []
+        if tag in ("article", "main") and self.content_depth > 0:
+            self.content_depth -= 1
+        if tag == "script" and self.jsonld_active:
+            self.jsonld_blocks.append("".join(self.jsonld_parts))
+            self.jsonld_active = False
+            self.jsonld_parts = []
+
+    def handle_data(self, data):
+        if self.jsonld_active:
+            self.jsonld_parts.append(data)
+        elif self.paragraph_depth > 0:
+            self.paragraph_parts.append(data)
+
+
+def find_article_body(value):
+    if isinstance(value, dict):
+        body = value.get("articleBody")
+        if isinstance(body, str) and len(body.strip()) >= 80:
+            return body.strip()
+        for child in value.values():
+            found = find_article_body(child)
+            if found:
+                return found
+    elif isinstance(value, list):
+        for child in value:
+            found = find_article_body(child)
+            if found:
+                return found
+    return ""
+
+
+def extract_source_body(html_text):
+    parser = ArticleTextParser()
+    parser.feed(html_text)
+    for block in parser.jsonld_blocks:
+        try:
+            body = find_article_body(json.loads(block))
+            if body:
+                return body
+        except (ValueError, TypeError):
+            continue
+    paragraphs = [p for p in parser.paragraphs if len(p) >= 45]
+    body = " ".join(paragraphs[:8]).strip()
+    return body if len(body) >= 100 else ""
+
+
+def summarize_verified_body(body):
+    """Return up to two lead sentences actually present in the source article."""
+    normalized = " ".join(body.split())
+    sentences = re.split(r"(?<=[.!?])\\s+(?=[A-Z0-9“\"'])", normalized)
+    selected = [sentence.strip() for sentence in sentences if len(sentence.strip()) >= 25][:2]
+    if not selected:
+        return ""
+    return " ".join(selected)
+
+
+def fetch_article_summary(link):
+    """Read the publisher page; failures are explicit rather than guessed."""
+    try:
+        request = urllib.request.Request(
+            link, headers={"User-Agent": "Mozilla/5.0 (compatible; trading-routine-news-bot/1.0)"}
+        )
+        with urllib.request.urlopen(request, timeout=8) as response:
+            content_type = response.headers.get("Content-Type", "")
+            if "html" not in content_type.lower() and "text" not in content_type.lower():
+                return "본문 확인 불가"
+            raw = response.read(2_000_000)
+            charset = response.headers.get_content_charset() or "utf-8"
+            html_text = raw.decode(charset, errors="replace")
+        body = extract_source_body(html_text)
+        if not body:
+            return "본문 확인 불가"
+        excerpt = summarize_verified_body(body)
+        if not excerpt:
+            return "본문 확인 불가"
+        try:
+            return translate_text_to_korean(excerpt)
+        except Exception:
+            return "한국어 번역 실패"
+    except Exception as exc:
+        print(f"Article body unavailable ({link}): {str(exc)[:100]}")
+        return "본문 확인 불가"
 
 
 def fetch_items(queries, start_date, end_date):
@@ -90,25 +234,34 @@ def fetch_items(queries, start_date, end_date):
             by_link[link] = {"original_title": original_title, "link": link,
                              "source": source, "published": published_at}
 
-    # Select the most recent matching articles, then translate only displayed titles.
+    # Select recent items, translate headlines, and summarize only source text we can read.
     raw_items = sorted(by_link.values(), key=lambda item: item["published"], reverse=True)[:MAX_ITEMS]
     if not raw_items:
         raise RuntimeError("전날 뉴스가 없습니다: " + " / ".join(queries))
     items = []
     for item in raw_items:
         item["title"] = translate_title_to_korean(item.pop("original_title"))
+        item["summary"] = fetch_article_summary(item["link"])
         items.append(item)
     return items
+
 
 def render_panel(category, items):
     lis = []
     for item in items:
         title = escape(item["title"])
         link = escape(item["link"], quote=True)
-        source = escape(item["source"])
+        source = escape(item["source"] or "출처 미상")
         published = item["published"].strftime("%H:%M KST")
-        label = f"{title} — {source}, {published}" if source else f"{title} — {published}"
-        lis.append(f'<li><a href="{link}" target="_blank" rel="noopener noreferrer">{label}</a></li>')
+        summary = escape(item.get("summary") or "본문 확인 불가")
+        lis.append(
+            f'<li class="rt-news-item">'
+            f'<a class="rt-news-title" href="{link}" target="_blank" rel="noopener noreferrer">{title}</a>'
+            f'<p class="rt-news-meta">{source} · {published} · '
+            f'<a href="{link}" target="_blank" rel="noopener noreferrer">원문 링크</a></p>'
+            f'<p class="rt-news-summary">{summary}</p>'
+            f'</li>'
+        )
     hidden = "" if category == "world" else " hidden"
     return (f'<div class="rt-news-panel" id="rt-panel-{category}" role="tabpanel" '
             f'aria-labelledby="rt-tab-{category}"{hidden}>'
@@ -164,8 +317,15 @@ def update_page(success, message, collected=None):
     .rt-news-status.is-delayed { border-color:#b45309; background:color-mix(in srgb, #f59e0b 9%, transparent); }
     .rt-news-status.is-delayed strong { color:#b45309; }
     """
-    if ".rt-news-status {" not in inner:
-        inner = inner.replace("</style>", css + "\n</style>", 1)
+    if ".rt-news-summary {" not in inner:
+        news_css = """
+    #trading-routine-dashboard .rt-news-item { padding:7px 0 9px; border-bottom:1px solid var(--rt-border); }
+    #trading-routine-dashboard .rt-news-title { display:inline-block; font-weight:600; line-height:1.5; }
+    #trading-routine-dashboard .rt-news-meta { margin:3px 0 5px; color:var(--rt-muted); font-size:11px; line-height:1.45; }
+    #trading-routine-dashboard .rt-news-meta a { color:var(--rt-green); text-decoration:underline; }
+    #trading-routine-dashboard .rt-news-summary { margin:0; color:var(--rt-text); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+    """
+        inner = inner.replace("</style>", news_css + "\n</style>", 1)
     escaped_inner = escape(inner, quote=True)
     source = source[:match.start(1)] + escaped_inner + source[match.end(1):]
     PAGE.write_text(source, encoding="utf-8")
