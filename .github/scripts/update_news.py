@@ -169,7 +169,7 @@ def extract_source_body(html_text):
 def summarize_verified_body(body):
     """Return up to two lead sentences actually present in the source article."""
     normalized = " ".join(body.split())
-    sentences = re.split(r"(?<=[.!?])\\s+(?=[A-Z0-9“\"'])", normalized)
+    sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9“\"'])", normalized)
     selected = [sentence.strip() for sentence in sentences if len(sentence.strip()) >= 25][:2]
     if not selected:
         return ""
