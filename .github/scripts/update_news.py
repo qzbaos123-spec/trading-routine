@@ -591,7 +591,7 @@ def fetch_items(category, queries, now):
                 source_node = node.find("source")
                 source = (source_node.text or "").strip() if source_node is not None else ""
                 if not source:
-                    source = source_group if direct_url else "Google News"
+                    source = query if direct_url else "Google News"
                 if not title or not link:
                     reason = "제목 또는 링크 없음"
                 elif published is None:
