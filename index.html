@@ -2655,7 +2655,6 @@ html&gt;body{padding:0}
         if (timeChanged) saveState();
         const warmupCompletedTime = state.warmupCompletedTimes[warmupTimeKey] || &#x27;&#x27;;
         const allDone = warmupDone &amp;&amp; (busyMode || (tradePassed &amp;&amp; checklistAtEnd));
-        teamPanel.hidden = resting || blocked || (busyMode ? !warmupDone : !(tradeDone &amp;&amp; checklistAtEnd));
         const percent = Math.round(completed/boxes.length*100);
         count.textContent = completed + &#x27; / &#x27; + boxes.length + &#x27; · &#x27; + percent + &#x27;%&#x27;;
         fill.style.width = percent + &#x27;%&#x27;;
@@ -2840,6 +2839,7 @@ html&gt;body{padding:0}
         const rewardUnlocked = [0,6].includes(clock.actualWeekday) &amp;&amp; visibleStreak &gt;= 5;
         streak.textContent = &#x27;🔥 &#x27; + visibleStreak + &#x27;일 연속&#x27;;
         weekendReward.hidden = !rewardUnlocked;
+        teamPanel.hidden = resting || blocked || (busyMode ? !warmupDone : !(tradeDone &amp;&amp; checklistAtEnd));
         done.hidden = !allDone || blocked || resting;
         if (allDone &amp;&amp; !blocked &amp;&amp; !resting &amp;&amp; state.praiseIndex !== null) praise.textContent = (busyMode ? &#x27;바쁜날 워밍업 완료 &#x27; : &#x27;진입 조건 충족 &#x27;) + &#x27;(&#x27; + warmupCompletedTime + &#x27; KST) · &#x27; + praiseLines[state.praiseIndex%praiseLines.length];
       };
