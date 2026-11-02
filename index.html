@@ -2242,26 +2242,11 @@ html&gt;body{padding:0}
     &lt;/section&gt;
 
     &lt;section class=&quot;rt-team-analysis rt-trade-summary&quot; aria-labelledby=&quot;rt-team-title&quot; hidden&gt;
-      &lt;h3 id=&quot;rt-team-title&quot;&gt;종합 분석 · 팀원 공유&lt;/h3&gt;
-      &lt;label class=&quot;rt-summary-label&quot;&gt;작성자 / 종목 / 기준 시간봉
-        &lt;input class=&quot;rt-analysis-input&quot; data-analysis=&quot;context&quot; maxlength=&quot;160&quot; placeholder=&quot;예: 도스토 / BTC / 4H·1H·15m&quot;&gt;
+      &lt;h3 id=&quot;rt-team-title&quot;&gt;종합 분석 · 카톡 단톡방 공유&lt;/h3&gt;
+      &lt;label class=&quot;rt-summary-label&quot;&gt;종합 분석
+        &lt;textarea class=&quot;rt-analysis-input&quot; data-analysis=&quot;narrative&quot; rows=&quot;12&quot; maxlength=&quot;12000&quot; placeholder=&quot;여러 관점, 엘파·이평선 관점, 현재 파동과 오늘의 흐름, 셋업 등을 한 번에 자유롭게 적으세요. 줄바꿈은 복사할 때 그대로 유지됩니다.&quot;&gt;&lt;/textarea&gt;
       &lt;/label&gt;
-      &lt;label class=&quot;rt-summary-label&quot;&gt;여러 관점
-        &lt;textarea class=&quot;rt-analysis-input&quot; data-analysis=&quot;perspectives&quot; rows=&quot;3&quot; maxlength=&quot;2000&quot; placeholder=&quot;경로·ICT·다이버전스 등 서로 일치하거나 충돌하는 근거&quot;&gt;&lt;/textarea&gt;
-      &lt;/label&gt;
-      &lt;label class=&quot;rt-summary-label&quot;&gt;엘파 관점
-        &lt;textarea class=&quot;rt-analysis-input&quot; data-analysis=&quot;elliott&quot; rows=&quot;3&quot; maxlength=&quot;2000&quot; placeholder=&quot;주요 시나리오와 대안, 파동 구조, 무효화 조건&quot;&gt;&lt;/textarea&gt;
-      &lt;/label&gt;
-      &lt;label class=&quot;rt-summary-label&quot;&gt;이평선 관점
-        &lt;textarea class=&quot;rt-analysis-input&quot; data-analysis=&quot;averages&quot; rows=&quot;3&quot; maxlength=&quot;2000&quot; placeholder=&quot;20·50·200선 정배열·역배열, 저점·고점 다지기, 주도주 흐름&quot;&gt;&lt;/textarea&gt;
-      &lt;/label&gt;
-      &lt;label class=&quot;rt-summary-label&quot;&gt;현재 파동 및 오늘의 흐름
-        &lt;textarea class=&quot;rt-analysis-input&quot; data-analysis=&quot;flow&quot; rows=&quot;3&quot; maxlength=&quot;2000&quot; placeholder=&quot;현재 파동 위치와 오늘 예상 경로, 시나리오 전환 조건&quot;&gt;&lt;/textarea&gt;
-      &lt;/label&gt;
-      &lt;label class=&quot;rt-summary-label&quot;&gt;셋업 글로 적기
-        &lt;textarea class=&quot;rt-analysis-input&quot; data-analysis=&quot;setup&quot; rows=&quot;3&quot; maxlength=&quot;2000&quot; placeholder=&quot;롱·숏·관망, 진입 트리거·가격, 손절·목표·손익비, 실행 조건&quot;&gt;&lt;/textarea&gt;
-      &lt;/label&gt;
-      &lt;div class=&quot;rt-summary-actions&quot;&gt;&lt;button class=&quot;rt-summary-action rt-copy-team&quot; type=&quot;button&quot;&gt;팀원 공유하기 · 복사&lt;/button&gt;&lt;/div&gt;
+      &lt;div class=&quot;rt-summary-actions&quot;&gt;&lt;button class=&quot;rt-summary-action rt-copy-team&quot; type=&quot;button&quot;&gt;카톡 공유용 복사&lt;/button&gt;&lt;/div&gt;
       &lt;p class=&quot;rt-team-status&quot; role=&quot;status&quot; aria-live=&quot;polite&quot;&gt;&lt;/p&gt;
       &lt;label class=&quot;rt-summary-label rt-team-output-label&quot; hidden&gt;공유 텍스트 · 직접 선택해서 복사할 수 있습니다
         &lt;textarea class=&quot;rt-team-output rt-summary-text&quot; rows=&quot;12&quot; readonly&gt;&lt;/textarea&gt;
@@ -2475,6 +2460,11 @@ html&gt;body{padding:0}
           praiseIndex:currentFlow &amp;&amp; Number.isInteger(saved.praiseIndex)?saved.praiseIndex:null,
           completed:currentFlow &amp;&amp; Boolean(saved.completed)
         };
+        if (typeof state.teamAnalysis.narrative !== &#x27;string&#x27;) {
+          state.teamAnalysis.narrative = [&#x27;context&#x27;,&#x27;perspectives&#x27;,&#x27;elliott&#x27;,&#x27;averages&#x27;,&#x27;flow&#x27;,&#x27;setup&#x27;]
+            .map(key =&gt; typeof state.teamAnalysis[key] === &#x27;string&#x27; ? state.teamAnalysis[key].trim() : &#x27;&#x27;)
+            .filter(Boolean).join(&#x27;\n\n&#x27;);
+        }
         analysisInputs.forEach(input =&gt; input.value = typeof state.teamAnalysis[input.dataset.analysis] === &#x27;string&#x27; ? state.teamAnalysis[input.dataset.analysis].slice(0,input.maxLength) : &#x27;&#x27;);
         teamOutputLabel.hidden = true;
         teamStatus.textContent = &#x27;&#x27;;
@@ -2915,21 +2905,16 @@ html&gt;body{padding:0}
       copyTeam.addEventListener(&#x27;click&#x27;,async () =&gt; {
         if (!analysisInputs.some(input =&gt; input.dataset.analysis !== &#x27;context&#x27; &amp;&amp; input.value.trim())) {
           teamStatus.textContent = &#x27;종합 분석 내용을 적은 뒤 복사해 주세요.&#x27;;
-          analysisInputs[1].focus();
+          analysisInputs[0].focus();
           return;
         }
         render(false);
-        const headings = {context:&#x27;작성자 / 종목 / 기준 시간봉&#x27;,perspectives:&#x27;여러 관점&#x27;,elliott:&#x27;엘파 관점&#x27;,averages:&#x27;이평선 관점&#x27;,flow:&#x27;현재 파동 및 오늘의 흐름&#x27;,setup:&#x27;셋업&#x27;};
-        const narrative = analysisInputs.map(input =&gt; &#x27;[&#x27; + headings[input.dataset.analysis] + &#x27;]\n&#x27; + (input.value.trim() || &#x27;미작성&#x27;)).join(&#x27;\n\n&#x27;);
-        const result = state.mode === &#x27;simple&#x27;
-          ? &#x27;[바쁜날 루틴 &#x27; + getClock().actualKey + &#x27;]\n워밍업 &#x27; + simpleBoxes.filter(box =&gt; box.checked).length + &#x27;/&#x27; + simpleBoxes.length + &#x27; 완료 · 매매 체크리스트 생략&#x27;
-          : summaryText.value;
-        teamOutput.value = &#x27;[팀원 공유 · 종합 트레이딩 분석]\n\n&#x27; + narrative + &#x27;\n\n&#x27; + result;
+        teamOutput.value = analysisInputs[0].value.trim();
         teamOutputLabel.hidden = false;
         let copied = false;
         try { await navigator.clipboard.writeText(teamOutput.value); copied = true; }
         catch (_) { teamOutput.focus(); teamOutput.select(); try { copied = document.execCommand(&#x27;copy&#x27;); } catch (_) {} }
-        teamStatus.textContent = copied ? &#x27;복사 완료 · 팀 채팅에 붙여넣으세요.&#x27; : &#x27;자동 복사가 지원되지 않습니다. 아래 텍스트를 직접 복사해 주세요.&#x27;;
+        teamStatus.textContent = copied ? &#x27;복사 완료 · 카톡 단톡방에 붙여넣으세요.&#x27; : &#x27;자동 복사가 지원되지 않습니다. 아래 텍스트를 직접 복사해 주세요.&#x27;;
       });
       copySummary.addEventListener(&#x27;click&#x27;,async () =&gt; {
         let copied = false;
